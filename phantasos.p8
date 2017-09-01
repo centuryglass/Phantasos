@@ -2891,10 +2891,6 @@ function _init()
 	rectangle()*16,loading_ctrl,
 	rnd_pos(always_true),
 	str_to_list"true,0,0,0,0,7,1,true,true,0,0;0;0,weapon;armor;rings"
-	log("equip types:")
-	log(equip_types[1])
-	log(equip_types[2])
-	log(equip_types[3])
 	function point_mapping(str)
 		local hex_tbl,pt_tbl,mapped,offset=
 		split(str,","),{},{},point(8,8)
