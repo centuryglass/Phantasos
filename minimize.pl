@@ -97,7 +97,7 @@ my @reserved = (
 "print",
 "printh",
 "pset",
-"rect"
+"rect",
 "rectfill",
 "repeat",
 "return",
