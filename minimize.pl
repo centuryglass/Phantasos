@@ -11,11 +11,11 @@ while(defined($read)){
 }
 close(LUA);
 print("read ".length($file)." chars\n");
-$file =~ s/--\[\[.*?\]\]//gs; #remove block comments
-$file =~ s/--.*//g; #remove single line comments
-
 my($tokensrc) = ($file =~ /.*__lua__\n(.*)\n__gfx__.*/s);
 $tokensrc =~ s/".*?"/ /gs; #temporarily remove strings
+
+$file =~ s/--\[\[.*?\]\]//gs; #remove block comments
+$file =~ s/--.*//g; #remove single line comments
 #extract all variable names
 my @tokens = ($tokensrc =~ /[a-z][a-z\d_]*/g);
 my %tmap;
