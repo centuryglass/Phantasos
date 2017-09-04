@@ -11,12 +11,41 @@ while(defined($read)){
 }
 close(LUA);
 print("read ".length($file)." chars\n");
-my($tokensrc) = ($file =~ /.*__lua__\n(.*)\n__gfx__.*/s);
-$tokensrc =~ s/".*?"/ /gs; #temporarily remove strings
 
+#temporarily remove strings:
+#Save strings to a list, and mark their places in the file
+my @strings = ($file =~ /(".*?")/gs);
+my $openingComment="";
+my $si = 0;
+foreach my $str(@strings){
+  $file =~ s/\Q$str\E/"<STRING$si>"/;
+  $si += 1;
+}
+
+#save all comments that are at the very start of the code
+while($file =~ /^(.*__lua__\n\s*)(--.*)/s){
+  my $header=$1;
+  my $fdata=$2;
+
+  if($fdata =~ /^(--\[\[.*?\]\]--)(.*)/s){
+    $openingComment=$openingComment.$1."\n";
+    $fdata=$2;
+  }
+  elsif($fdata =~ /^(--.*?)(\n.*)/s){
+    $openingComment=$openingComment.$1."\n";
+    $fdata=$2;
+  }
+  else{
+    die("bad match, fdata=".substr($fdata,0,30));
+  }
+  $file=$header.$fdata;
+}
 $file =~ s/--\[\[.*?\]\]//gs; #remove block comments
 $file =~ s/--.*//g; #remove single line comments
+
+
 #extract all variable names
+my($tokensrc) = ($file =~ /.*__lua__\n(.*)\n__gfx__.*/s);
 my @tokens = ($tokensrc =~ /[a-z][a-z\d_]*/g);
 my %tmap;
 
@@ -50,6 +79,7 @@ my @reserved = (
 "coresume",
 "cos",
 "costatus",
+"count",
 "cstore",
 "cursor",
 "del",
@@ -116,6 +146,7 @@ my @reserved = (
 "sset",
 "sspr",
 "stat",
+"STRING",
 "stop",
 "sub",
 "then",
@@ -143,14 +174,6 @@ foreach my $t (@tokens){
 }
 foreach my $rval(@reserved){
   delete $tmap{$rval};
-}
-
-#Save strings to  list, and mark their places in the file
-my @strings = ($file =~ /(".*?")/gs);
-my $si = 0;
-foreach my $str(@strings){
-  $file =~ s/\Q$str\E/"<STRING$si>"/;
-  $si += 1;
 }
 
 #pick replacement variable names sequentially
@@ -240,7 +263,7 @@ $code =~ s/\h+(?=[!-\/[-^`:-\@{-~])//g;
 $code =~ s/(?<=\n)\s+//gs;
 $code =~ s/\h+(?=$)//g;
 
-$file=$header.$code.$data;
+$file=$header.$openingComment.$code.$data;
 
 #put strings back
 $si = 0;
