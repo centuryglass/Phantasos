@@ -1,14 +1,27 @@
 pico-8 cartridge // http://www.pico-8.com
 version 10
 __lua__
+--phantasos v.0.6
 --[[
-phantasos v.0.6
 copyright anthony brown 2017
 this work is licensed under a
 creative commons attribution 4.0
 international license
 https://creativecommons.org/
 licenses/by/4.0/
+--]]
+
+--[[
+sfx
+walking:0
+blocked attack:1
+attack:2
+scroll:3
+potion:4
+food:5
+throwing:6
+potion throwing:7
+weapon throwing
 --]]
 
 --[[
@@ -88,33 +101,48 @@ function str_contains(str,match)
 end
 
 --[[
-replace all instances of c in
-str with repl
---]]
-function str_replace(str,c,repl)
-	local rval=""
+replace characters in a string
+repl: replacement table, contains
+character key/value pairs in the
+format
+repl[to_replace]=replacement_char
+function str_replace(str,repl)
+	if(is_string(repl))repl=str_to_table(repl)
+	local src,rval=str,""
+	local esc
 	for i = 1, #str do
 		local ci = sub(str,i,i)
-		rval = rval..
-		(ci==c and repl or ci)
+		if ci=="\\" then
+			esc=true
+		elseif not esc then
+			rval=rval..(repl[ci] or ci)
+		else
+			esc=false
+		end
 	end
+	log(src.."->"..rval)
 	return rval
 end
+--]]
 
 --[[
 split str into an array around
 instances of char
+\ works as an escape character
 --]]
 function split(str,char)
 	local buf,subs,length =
 	"",{},#str+1
+	local esc
 	for i = 1, length do
 		local c = sub(str,i,i)
-		if str_contains(char,c)or i==length then
+		if i==length or str_contains(char,c)and not esc then
 			add(subs,buf)
 			buf = ""
+		elseif c=="\\" then
+			esc=true
 		else
-			buf = buf .. c
+			buf,esc=buf..c,false
 		end
 	end
 	return subs
@@ -138,23 +166,36 @@ strings: anything that doesn't
 fit in any other categories
 --]]
 function str_to_val(str)
+	local recurse = #str > 1 and
+	str_contains(str,":")
+	and "table" or str_contains(str,";")
+	and "array"
+	if recurse then
+		local repl,converted={
+			[";"]=",",
+			[":"]="=",
+			["%"]=":",
+			["/"]=";"
+		},""
+		for i=1,#str+1 do
+			local c=sub(str,i,i)
+			converted=converted..
+			(repl[c] or c)
+		end
+		--str_replace(str,";=\\,,:=\\=,%=:,/=;")
+		if recurse=="table" then
+			return str_to_table(converted)
+		elseif recurse=="array" then
+			return str_to_array(converted)
+		end
+	end
 	if(is_numstr(str)) str+=0
-	local recurse
-	if str_contains(str,";") then
-		str,recurse =
-		str_replace(str,";",","),true
-	end
-	if str_contains(str,":") then
-		return str_to_table(str_replace(str,":","="))
-	elseif recurse then
-		return str_to_array(str)
-	end
 	if(str == "false")return false
 	if(str == "nil")return nil
-	return (str == "true") and true
-	or (str == "always_nil") and always_nil
-	or (str == "always_true") and always_true
-	or (str == "{}") and {}
+	return str=="true" and true
+	or str=="always_nil" and always_nil
+	or str=="always_true" and always_true
+	or str=="{}" and {}
 	or classtable[str] or str
 end
 
@@ -188,6 +229,8 @@ function str_to_table(str,tab)
 	foreach(kvpairs,
 	function(kv)
 		local k,v=unpack(split(kv,"="))
+		if(not k)log("no key for "..kv)
+		if(not v)log("no value for "..kv.." str="..str)
 		tab[str_to_val(k)]=str_to_val(v)
 	end)
 	if tab.addr then
@@ -248,6 +291,36 @@ function hex_to_pts(hexstr,transform)
 end
 
 --[[
+convert a string into a table
+of point lists. for each point
+list, also add the reflections
+of the list over x=8,y=8,
+and y=8-x
+--]]
+function point_mapping(str)
+	local hex_tbl,pt_tbl,mapped,offset,tfms=
+	split(str,","),{},{},point(8,8),
+	split("x=1,y=1 x=-1,y=1 x=1,y=-1 x=-1,y=-1"," ")
+	for i=1, #hex_tbl do
+		foreach(tfms,
+		function(transform)
+			local pts=hex_to_pts(hex_tbl[i],
+			function(p)
+				return (p-offset)*point(transform)+offset
+			end)
+			if pts then
+				local key=#pts[1]
+				if not mapped[key] then
+					add(pt_tbl,pts)
+					mapped[key]=true
+				end
+			end
+		end)
+	end
+	return pt_tbl
+end
+
+--[[
 ###### coroutine management #####
 --]]
 --[[
@@ -300,8 +373,6 @@ order
 function unpack(t,index,last)
 	if is_string(t) then
 		t= str_to_array(t)
-		log("unpack:"..t)
-		if(index)log("i="..index)
 	end
 	index,last=index or 1,last or #t
 	if(index>last)return
@@ -325,6 +396,7 @@ function foreach_pair(tbl,fn)
 		if(fn(v,k))return true
 	end
 end
+
 
 --[[
 identical to the built-in foreach
@@ -409,24 +481,6 @@ function contains(t,v)
 	end)
 end
 
---[[
-i was losing button presses between
-game turns, so now _update stores
-pending button presses until
-they're ready to be used. this
-function replaces btnp(),
-prioritizing pending button presses
-over new input
-
-[n]:a button number to check
---]]
-function button(n)
-	if b_pending then
-		if(n)return band(b_pending,2^n)==2^n
-		return b_pending
-	end
-	return btnp(n)
-end
 
 --[[
 random integer function
@@ -473,7 +527,7 @@ return:true if fn returned true
 --]]
 function prob_tbl(tbl,fn)
 	if(not tbl)return true
-	return foreach_pair(tbl,function(v,k)
+	return tbl and foreach_pair(tbl,function(v,k)
 		if rnd(1000) < v then
 			if(fn(k)) return true
 		end
@@ -508,6 +562,12 @@ function start_turn()
 			end)
 		end
 	end
+	foreach_entity(function(e)
+		if e.turn == turn and e.take_turn then
+			e:take_turn()
+			e.turn +=1
+		end
+	end)
 end
 
 --[[
@@ -598,7 +658,9 @@ return:true if c was able to use
 function use(itm,c)
 	if itm.use then
 		start_turn()
+		local fx=itm.use_sfx
 		if(c==you) msg(itm.use_msg) menu_close_all()
+		if(fx)sfx(fx)
 		itm:use(c)
 		if itm.qty then
 			itm:change_qty(-1)
@@ -1598,7 +1660,7 @@ can move between the map and
 creature inventories
 --]]
 item = entity:subclass
-	"classname=item,sprite=108,name=item,qty=1"
+	"classname=item,sprite=108,name=item,qty=1,throw_sfx=6"
 
 --[[
 if initialized with a point,
@@ -1651,7 +1713,7 @@ end
 food items restore hit points
 --]]
 meat= item:subclass
-"classname=meat,sprite=70,name=meat,color=14,hp_boost=5,use_msg=you feel much better."
+"classname=meat,sprite=70,name=meat,color=14,hp_boost=5,use_msg=you feel much better.,use_sfx=5"
 function meat:use(c)
 	c+=self.hp_boost
 end
@@ -1750,7 +1812,7 @@ function color_coded_itm:use(c)
 	self:on_use(c)
 end
 
-potion=color_coded_itm:subclass"classname=potion,sprite=65,color=13,names=1:healing;2:vision;3:poison;4:wisdom;5:sleep;6:lethe;7:water;8:juice;9:spectral;10:toughness;11:blindness,messages=1:you are healed;2:you see everything!!;3:you feel sick;4:you feel more experienced;5:you fell asleep;6:where are you?;7:refreshing!;8:yum;9:you feel ghostly;10:nothing can hurt you now!;11:who turned out the lights?,colors=0:murky;1:viscous;2:fizzing;3:grassy;4:umber;5:ashen;6:smoking;7:milky;8:bloody;9:orange;10:glowing;11:lime;12:sky;13:reeking;14:fragrant;15:bland"
+potion=color_coded_itm:subclass"classname=potion,sprite=65,color=13,use_sfx=4,throw_sfx=7,names=1:healing;2:vision;3:poison;4:wisdom;5:sleep;6:lethe;7:water;8:juice;9:spectral;10:toughness;11:blindness,messages=1:you are healed;2:you see everything!!;3:you feel sick;4:you feel more experienced;5:you fell asleep;6:where are you?;7:refreshing!;8:yum;9:you feel ghostly;10:nothing can hurt you now!;11:who turned out the lights?,colors=0:murky;1:viscous;2:fizzing;3:grassy;4:umber;5:ashen;6:smoking;7:milky;8:bloody;9:orange;10:glowing;11:lime;12:sky;13:reeking;14:fragrant;15:bland"
 potion:classgen()
 function potion:on_use(c)
 
@@ -1849,7 +1911,7 @@ end
 
 --[[
 mushrooms mostly have minor effects,
-mostly bad. beware the deathcap.
+usually bad. beware the deathcap.
 --]]
 mushroom=color_coded_itm:subclass
 "classname=mushroom,sprite=67,color=4,names=1:tasty;2:disgusting;3:deathcap;4:magic,messages=1:that was delicious;2:that was awful;3:you feel deathly ill;4:look at the colors!,colors=1:speckled;3:moldy;6:chrome;8:bleeding;14:lovely;15:fleshy"
@@ -1874,7 +1936,7 @@ creature status, scrolls interact
 with the level map
 --]]
 scroll=color_coded_itm:subclass
-"classname=scroll,sprite=66,names=1:movement;2:wealth;3:summoning,messages=1:you are somewhere else;2:riches appear around you;3:you have company!,colors=0:filthy;1:denim;4:tattered;6:faded;8:ominous"
+"classname=scroll,sprite=66,use_sfx=3,names=1:movement;2:wealth;3:summoning,messages=1:you are somewhere else;2:riches appear around you;3:you have company!,colors=0:filthy;1:denim;4:tattered;6:faded;8:ominous"
 scroll:classgen()
 function scroll:on_use(c)
 	local type=self.type
@@ -1971,7 +2033,7 @@ accuracy boosts. also decent as
 a thrown weapon
 --]]
 knife = equipment:subclass
-	"classname=knife,sprite=68,name=knife,color=6,equip_slot=weapon,dthrown=4,bonuses=hit_boost:5;dmin_boost:1;dmax_boost:2"
+	"classname=knife,sprite=68,name=knife,color=6,equip_slot=weapon,throw_sfx=8,dthrown=4,bonuses=hit_boost:5;dmin_boost:1;dmax_boost:2"
 
 --[[
 a strong weapon, but landing hits
@@ -1979,7 +2041,7 @@ becomes more difficult.
 not meant as a thrown weapon but
 better than throwing apples
 --]]
-sword = equipment:subclass
+sword = knife:subclass
 	"classname=sword,sprite=69,name=sword,color=6,equip_slot=weapon,dthrown=3,bonuses=hit_boost:-10;dmin_boost:3;dmax_boost:6"
 
 --[[
@@ -1987,7 +2049,7 @@ only slightly better than a torch
 as an equipped weapon, but
 very effective when thrown.
 --]]
-	tomahawk = equipment:subclass
+	tomahawk = knife:subclass
 	"classname=tomahawk,sprite=73,name=tomahawk,equip_slot=weapon,dthrown=8,bonuses=hit_boost:5;dmin_boost:1;dmax_boost:1"
 
 	plate_armor = equipment:subclass
@@ -1995,7 +2057,7 @@ very effective when thrown.
 	leather_armor = equipment:subclass
 	"classname=leather_armor,sprite=76,name=leather armor,equip_slot=armor,bonuses=ac:1"
 	spiked_armor = equipment:subclass
-	"classname=spiked_armor,sprite=77,name=spiked armor,equip_slot=armor,bonuses=ac:2;dmin_boost=2"
+	"classname=spiked_armor,sprite=77,name=spiked armor,equip_slot=armor,bonuses=ac:2;dmin_boost:2"
 	warded_armor = equipment:subclass
 	"classname=warded_armor,sprite=78,name=warded armor,equip_slot=armor,bonuses=ac:6"
 
@@ -2057,7 +2119,7 @@ function creature:take_turn()
 		if screen>c_p and
 		not gameover and
 		(self:can_see(you_p) or
-		c_p:dist(you_p)<4) then
+		c_p:dist(you_p)<3) then
 			local valid_path
 			local path=self.path
 			for i=1,path and #path or 0 do
@@ -2228,7 +2290,7 @@ mantid=rat:subclass
 
 --powerful guards
 watcher=mantid:subclass
-"classname=watcher,name=watcher,sight_rad=10,sprite=176,hp_max=20,hitrate=95,min_dmg=3,max_dmg=6,ac=3,exp=20,item_table=knife:500;sword:1000;bread:800;potion:400;spiked_armor=200"
+"classname=watcher,name=watcher,sight_rad=10,sprite=176,hp_max=20,hitrate=95,min_dmg=3,max_dmg=6,ac=3,exp=20,item_table=knife:500;sword:1000;bread:800;potion:400;spiked_armor:200"
 function watcher:init(params)
 	creature.init(self,params)
 	self.guard_pos=-self.pos
@@ -2359,7 +2421,7 @@ end
 function build_level()
 	--load pre-designed level features
 	--from memory
-	local f_lists=split(	mem_to_str(0x2694,0x4c0),"&")
+	local f_lists=split(	mem_to_str(0x264e,0x4c0),"&")
 	local top_percent,range,ftimer=
 	100-#f_lists,4,timer()
 	ctrl,building,
@@ -2734,6 +2796,7 @@ function inventory:update()
 						local crt =get_creature(dst)
 						if(crt) you:attack(crt,itm.dthrown or 1)
 						if(itm.on_throw)itm:on_throw(dst)
+						sfx(itm.throw_sfx)
 						start_turn()
 					end)
 					redraw=frame
@@ -2814,15 +2877,15 @@ end
 --####### main controls #######--
 function default_ctrl()
 	for i=0,3 do
-		if(button(i)) you:move(i)
+		if(btnp(i)) you:move(i)
 	end
-	if(button"4") main_menu:open()
-	if(button"5") show_map,redraw=not show_map,frame
+	if(btnp"4") main_menu:open()
+	if(btnp"5") show_map,redraw=not show_map,frame
 end
 
 function selection_ctrl()
 	for i=0,3 do
-		if button(i) then
+		if btnp(i) then
 			local pos =
 			(-map_cursor.pos):move(i)
 			if map_cursor_bounds>pos and
@@ -2832,35 +2895,35 @@ function selection_ctrl()
 			end
 		end
 	end
-	if button"4" then
+	if btnp"4" then
 		map_cursor_action(map_cursor.pos)
 		map_cursor_remove()
 	end
-	if(button"5") msg"cancelled." map_cursor_remove()
+	if(btnp"5") msg"cancelled." map_cursor_remove()
 end
 
 --alternate controls that
 --activate when a menu is active
 function menu_ctrl()
 		--left:close menu
-	if(button"0")menu_close() return
+	if(btnp"0")menu_close() return
 	--up:change selection
-	if(button"2") then
+	if(btnp"2") then
 		active_menu.index -= 1
 		if(active_menu.index==0)active_menu.index=#active_menu
 	end
 	--down:change selection
-	if(button"3") active_menu.index %= #active_menu active_menu.index += 1
+	if(btnp"3") active_menu.index %= #active_menu active_menu.index += 1
 	--0,right:select menu item
-	if button"4" or button"1" then
+	if btnp"4" or btnp"1" then
 		if(active_menu.index<=#active_menu) active_menu:get(active_menu.index):op() redraw=frame
 	end
 	--x:close all menus
-	if(button"5")menu_close_all()
+	if(btnp"5")menu_close_all()
 end
 
 function no_ctrl()
-	if(button"5") show_map,redraw=not show_map,frame
+	if(btnp"5") show_map,redraw=not show_map,frame
 	start_turn()
 	msg_update()
 end
@@ -2881,42 +2944,32 @@ end
 function _init()
 	cartdata"phantasos"
 	level_init()
-	update_routines,turn_routines,
-	draw_routines,screen,ctrl,build_pos,
-	redraw,show_map,frame,turn,
-	num_creatures,max_creatures,
-	lvl_floor,building,title,
-	kills,high_scores,equip_types
+	update_routines,turn_routines,draw_routines,
+	screen,
+	ctrl,
+	build_pos,
+	redraw,--0
+	show_map,--false
+	frame,--0
+	turn,--0
+	num_creatures,--0
+	max_creatures,--7
+	lvl_floor,--1
+	building,--true
+	title,--true
+	kills,--0
+	high_scores,--(0,0,0)
+	equip_types--(weapon,armor,rings)
 	= queue(),queue(),queue(),
-	rectangle()*16,loading_ctrl,
+	rectangle()*16,
+	loading_ctrl,
 	rnd_pos(always_true),
-	str_to_list"true,0,0,0,0,7,1,true,true,0,0;0;0,weapon;armor;rings"
-	function point_mapping(str)
-		local hex_tbl,pt_tbl,mapped,offset=
-		split(str,","),{},{},point(8,8)
-		for i=1, #hex_tbl do
-			foreach(split("x=1,y=1 x=-1,y=1 x=1,y=-1 x=-1,y=-1"," "),
-			function(transform)
-				local pts=hex_to_pts(hex_tbl[i],
-				function(p)
-					return (p-offset)*point(transform)+offset
-				end)
-				if pts then
-					local key=#pts[1]
-					if not mapped[key] then
-						add(pt_tbl,pts)
-						mapped[key]=true
-					end
-				end
-			end)
-		end
-		return pt_tbl
-	end
+	str_to_list"0,false,0,0,0,7,1,true,true,0,0;0;0,weapon;armor;rings"
 	you,draw_tbl,los_tbl =
 	player(build_pos),
-	point_mapping(mem_to_str(0x2000,0x2ca)),{}
+	point_mapping(mem_to_str(0x2000,0x284)),{}
 	set_screen()
-	local los_array= point_mapping(mem_to_str(0x22ca,0x3ca))
+	local los_array= point_mapping(mem_to_str(0x2284,0x3ca))
 	foreach(los_array,
 	function(los_pt)
 		local mapped = {}
@@ -2930,28 +2983,13 @@ function _init()
 end
 
 function _update()
-	if(b_pending==0)b_pending = btnp()
-	if(run_coroutines(update_routines)) return
-	if b_pending!=0 and not turn_running then
-		if not title and #msg>0 then
-			msg_update()
-		else
-			if(msg.curr)msg_update()
-			ctrl()
-		end
-		b_pending=0
-	elseif turn_running then
-		if foreach_entity(function(e)
-			if e.turn == turn and e.take_turn then
-				e:take_turn()
-				e.turn +=1
-				--return true
-			end
-		end) then return true end
-	--when all entities are done:
+	if run_coroutines(update_routines)
+		then return
+	end
+	if turn_running then--finish turn
 		run_coroutines(turn_routines,true)
 		turn+=1
-		if you.hp <=0 and not gameover then
+		if you.hp <=0 then
 			gameover,reveal_all,ctrl=
 			true,true,no_ctrl
 		end
@@ -2967,6 +3005,13 @@ function _update()
 			high_scores[i]=max(score[i],dget(i))
 			dset(i,high_scores[i])
 		end
+	elseif btnp()!=0 then
+		if not title and #msg>0 then
+			msg_update()
+		else
+			if(msg.curr)msg_update()
+			ctrl()
+		end
 	end
 end
 
@@ -2976,6 +3021,7 @@ function _draw()
 	--### draw loading screen #######
 	if title or	building then
 		sspr(32*(flr((frame%18)/6)),str_to_list"96,32,32,0,0,128,128")
+		if(frame%9==0)sfx(0)
 		if(title) sspr(str_to_list"64,64,64,16,14,0,100,25")
 		local txt = "press any key to start"
 		if(build_percent < 100) txt="descending:"..build_percent.."%"
@@ -2993,40 +3039,39 @@ function _draw()
 		function draw(s)
 				spr(s,(keypt*8):get_xy())
 		end
-		local hidden={}
+		local hidden,dark_pal={},
+		str_to_table"0=0,1=0,2=1,3=1,4=2,5=1,6=5,7=6,8=2,9=4,10=4,11=3,12=1,13=5,14=8,15=4"
 		for i=1,#draw_tbl do
-			if you.hallucinating then
-				pal(rndint(16,0),rndint(16,0))
-			end
 			local pt_tbl=draw_tbl[i]
 			keypt = pt_tbl[1]
 			local abs_pos = keypt+screen
-			local t,visible,key =
+			local t,key=
 			get_tile(abs_pos) or void,
-			reveal_all,#keypt
-			draw(62)
-			if not (hidden[key]
+			#keypt
+			foreach_pair(dark_pal,function(v,k)
+				pal(k,you.hallucinating and rndint(16,0) or
+				v)
+			end)
+			if reveal_all or not (hidden[key]
 			or t < void
 			or (you.pos:dist(abs_pos)
 			> you.sight_rad and not t.bright)
 			or you.can_see == always_nil) then
-				t.seen,visible=true,true
+				t.seen=true
+				if not you.hallucinating then
+					pal()
+				end
+				draw(t.sprite)
+				foreach_entity(function(e)
+					e:draw()
+				end,rectangle(abs_pos))
+			elseif t.seen then
+				draw(t.sprite)
 			end
+			pal()
 			if t.solid or hidden[key] then
 				for k=2,#pt_tbl do
 					hidden[#pt_tbl[k]] = true
-				end
-			end
-			if t.seen or reveal_all then
-				draw(t.sprite)
-				if not visible then
-					pal(1,0)
-					draw(61)
-					pal()
-				else
-					foreach_entity(function(e)
-						e:draw()
-					end,rectangle(abs_pos))
 				end
 			end
 		end
@@ -3062,9 +3107,9 @@ function _draw()
 	draw_border"2,2,124,14"
 	if(not msg.curr	and #msg > 0)msg_update()
 	local last,curr = msg.last or "",msg.curr or ""
-	print(last,64-2*#last,4,9)
+	print(last,4,4,9)
 	if(#msg>0)spr(str_to_list"31,120,10")
-	print(curr,64-2*#curr,10,10)
+	print(curr,4,10,10)
 
 	--######## draw menus ##########
 	foreach(open_menus.values,
@@ -3140,14 +3185,14 @@ __gfx__
 0cc9a900000550000555655000ccccf000655560000004800400700004444440055565500cc00cc005dddd50024000000b00300b00a0aaa0044444000d0d0d00
 0cc00000000440000000000000cffff00066666000000848040700000222222000000000c00cc0000555555004000000000330000aaa0a000444440000ddd000
 00000000000440000000000000000000000000000000008004700000000000000000000000000c0000555500000000000000300000a000000044400000000000
-00444400000444400044400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00422400000422400042200409900990099099009944900000000000000000000000000000000000000000000000000000000000000000000000000000000000
-0042240000042240004220470944449009944400947490000000000000000000000aaaa000aa9000000000000000000000a90000000000000000000000000000
-0074740000074740004444740074470000097400009959900000000000000000000a90aa900a9000000000000000000000a90000000000000000000000000000
-0747474000747474044747400099990000999900008559000000000000000000000a900aa90a9000000000000000000000a90000000000000000000000000000
-0744744000744744047474000885588008885500088558000000000000000000000a9000a90a9000000000000000000000a90000000000000000000000000000
-047444400047444a044774000855558088885550085558000000000000000000000a900aa90a90aa0000aaa000aaa900aaaaa90aaa00000aaa0000aa0000aaa0
-0447777004447770777444008855558888855550885555800000000000000000000a90aa900aaaaa000aa0a900aaaa9000a900aa0a9000a00a900a9aa000a0a9
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00666600000666600066600609900990099099009944900000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0062260000062260006220670944449009944400947490000000000000000000000aaaa000aa9000000000000000000000a90000000000000000000000000000
+0076760000076760006666700074470000097400009959900000000000000000000a90aa900a9000000000000000000000a90000000000000000000000000000
+0767676000767676066767000099990000999900008559000000000000000000000a900aa90a9000000000000000000000a90000000000000000000000000000
+0766766000766766067676000885588008885500088558000000000000000000000a9000a90a9000000000000000000000a90000000000000000000000000000
+0676667000676667066776000855558088885550085558000000000000000000000a900aa90a90aa0000aaa000aaa900aaaaa90aaa00000aaa0000aa0000aaa0
+0667776006667770777666008855558888855550885555800000000000000000000a90aa900aaaaa000aa0a900aaaa9000a900aa0a9000a00a900a9aa000a0a9
 ef0404000e044000ef0044700008b80000008b000bb000bb0000000000000000000aaaa0000a900a90a900a900a90aa900a90a900a9000aa0000a900a90aa000
 0e0747000f004740f04e4700000bbb000000bb000b00000b0000000000000000000a9000000a900a90a900a900a900a900a90a900a90000aa900a900a900aa90
 f0044400e002444ee0024470000ebe3b0000b0000b08380b0000000000000000000a9000000a900a90a900a900a900a900a90a900a900a000a90a900a9a000a9
@@ -3207,7 +3252,7 @@ ff24442024024240244444000555b0b0b555b0000b5e5e0000000000000000000000000000000000
 
 __gff__
 060606070706040606080606060606060707070306070707072406060807240a030809090609050303240d06060606060b060c0524020f0809060606060505040d030e240e0f0809092404070707070306000203070c0707070707070c030707030707050809080a06070108070803080507060504010102060e0d080608050c
-0408030902090109240903080708060905090424080c0809080a080b2404000807070607050604060305020501240a060907240e00080709060a050b040b030c020d012404020807070606050604050324050707080607240c0d0809090a0a0b0b0c240a000807080609050904090309020a0124080d0809080a080b080c240f
+0808030902090109240903080708060905090424080c0809080a080b2404000807070607050604060305020501240a060907240e00080709060a050b040b030c020d012404020807070606050604050324050707080607240c0d0809090a0a0b0b0c240a000807080609050904090309020a0124080d0809080a080b080c240f
 __map__
 08082607070606260606030304040505260708010303040405020603060406050603070407050706070508060805090609050c030d040d26050503030404260404030326030301010202260807020007000c00030109010c0104020802090204030503080309030c030504080409040c0406050705080509050c050706080609
 0626020201012608060900080207030803070408040904080526060803070407050803090409010c26050801070207030804080109020926070605000501050206020603060406050705260607020502060306040605060507260101000026060503000402050305042608050701090107020902080426050601020203030403
@@ -3242,15 +3287,15 @@ __map__
 070706240907240201080707060605050404030302240d0a09080a090b090c09240002070806070506040503050204010324050a07080609240b0509070a06240004070806070507040603060205010524010b070806090509040a030a020a240b0809080a0824020d07080609050a040b030c240a0809082408000807080608
 0508040803080208012405080708060824000307080607050604060305020501042402020707060605050404030324050c0809070a060b240304070806070506040524030e0809070a060b050c040d240e0c09080a090b0a0c0a0d0b24040907080608050924070c0809080a070b240700080708060805080407030702070124
 __sfx__
-000124010d750077500775006750057500a0502240021400204001f4001c2021e200202002320024200262002820028200222001320019400016000400003000020020b000084000900009400090000a4000a000
+010124010a1730a1730777306773057730a0732240321403204031f4031c2031e203202032320324203262032820328203222031320319403016030400303003020030b003084030900309403090030a4030a003
 000d240103410066200161001100011000710006100051001a10015100131020b100132002320024200262002820028200222001320019400016000400003000020020b000084000900009400090000a4000a000
 000208060c03002620026501b5500665006000155020c400090000a0000b4002440008400080000840008000080020c00008400090000a4000a0000b400240000640007002034000700006000054000440024400
-060a050b084200802007410070100702202410070400643005030044200302024470064400805008450070600746007070060220b450094400a05024410010400743006030054200442003020020220207007440
-0b02240a040600346024060064400805007450070220c41008430090300a4200b020244600f040094400a0500b4500c4500d0600e0220702008430080300742024040080220c4000843009030094200a0200b410
-070806090b040094400a0220f410090400a4300b0300c4200d4200e020244000f430090300a4200b0200c4100d0100e0220e420090400a4300b4300c0300d0302446002040074400605005450040600302202450
-040a030b054400405003050244400d040090400a4400b4400c0220f400094300a0300b4200c0200d4100e01024470044400805007450070600646005070050220945008440090502406000040074400644005050
-2406080702450010220100008430070300642005020044100301002400244100f040094300a0300b4200c4200d0200e022054400704006440240300e040094300a4300b4300c0300d02204450070400644005050
-08240205080220d040090400a0400b0400c040244500944008050090220a4600844009050094500906024470094400805008450080600946009070090220b41008430090300a4200a02024060084400805008450
+012000000f072070720f072060720e072060720f002050020e0020500210502050020c00207102010020100202002010020100201002010020150201502174021740215402134021240213402124021340209002
+0107240a036110c0710c07104001040010f0010400104001036110c0710c0710f0010f0010f001060010a001036110c0710c0710e0010700108001080010700124001080010c0010800109001090010a0010b001
+01110000096410b171091710d6210b171091710a6410960105101041010c60102201012010d60102701017010f60103401034010440106101071010c1010d1012410102101071010610105101041010310102101
+001000000136503205052053f2053f205222052220502205022050220504205022050320501205012050e20524205042050820507205072050620505205012050220502205022050120501205012050220504205
+0107080702006376563435634356343562d656353562a656126063a506125060f006090060a0060b0060c0060d0060e006050060700606006240060e006090060a0060b0060c0060d00604006070060600605006
+012400003f2650d000090000a0000b0000c000244000940008000090020a4000840009000094000900024400094000800008400080000940009000090020b40008400090000a4000a00024000084000800008400
 050404240704006430054300403003030240100943008030084200802009410090220645008440070502403003040074300643005430040220f060090400a4400b4400c0500d4500e45024410034300703006420
 0008070808070084400805008450080600846024020044300703006420050220c430090400a0400b430240300c040094300a4300b022070100843008030084200702007410244600744008050084500706007022
 070a060b060400504004040030400204001040240300204007430064300543004030030220546008440070500645006060240500a4400902207430244000a43008030084200902009410090100a0220446008440
