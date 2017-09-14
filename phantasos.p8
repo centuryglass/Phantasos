@@ -21,7 +21,9 @@ potion:4
 food:5
 throwing:6
 potion throwing:7
-weapon throwing
+weapon throwing:8
+door open:9
+door close:10
 --]]
 
 --[[
@@ -101,64 +103,12 @@ function str_contains(str,match)
 end
 
 --[[
-replace characters in a string
-repl: replacement table, contains
-character key/value pairs in the
-format
-repl[to_replace]=replacement_char
-function str_replace(str,repl)
-	if(is_string(repl))repl=str_to_table(repl)
-	local src,rval=str,""
-	local esc
-	for i = 1, #str do
-		local ci = sub(str,i,i)
-		if ci=="\\" then
-			esc=true
-		elseif not esc then
-			rval=rval..(repl[ci] or ci)
-		else
-			esc=false
-		end
-	end
-	log(src.."->"..rval)
-	return rval
-end
---]]
-
---[[
-split str into an array around
-instances of char
-\ works as an escape character
---]]
-function split(str,char)
-	local buf,subs,length =
-	"",{},#str+1
-	local esc
-	for i = 1, length do
-		local c = sub(str,i,i)
-		if i==length or str_contains(char,c)and not esc then
-			add(subs,buf)
-			buf = ""
-		elseif c=="\\" then
-			esc=true
-		else
-			buf,esc=buf..c,false
-		end
-	end
-	return subs
-end
-
---[[
 recognizes non-string values
 stored as strings, and returns
 their converted value. supports:
 numbers: base 10 only
 boolean values, nil
-tables: in the format
-k1:v1;k2:v2...
-arrays: in the format
-v1;v2;v3...
-empty tables:{}
+tables:values surrounded by {}
 classes: identified by their
 names stored in global array
 classtable
@@ -166,50 +116,20 @@ strings: anything that doesn't
 fit in any other categories
 --]]
 function str_to_val(str)
-	local recurse = #str > 1 and
-	str_contains(str,":")
-	and "table" or str_contains(str,";")
-	and "array"
-	if recurse then
-		local repl,converted={
-			[";"]=",",
-			[":"]="=",
-			["%"]=":",
-			["/"]=";"
-		},""
-		for i=1,#str+1 do
-			local c=sub(str,i,i)
-			converted=converted..
-			(repl[c] or c)
-		end
-		--str_replace(str,";=\\,,:=\\=,%=:,/=;")
-		if recurse=="table" then
-			return str_to_table(converted)
-		elseif recurse=="array" then
-			return str_to_array(converted)
-		end
+	if sub(str,1,1) == "{"
+	and sub(str,#str) == "}"
+	then
+		return str_to_table(sub(str,2,#str-1))
 	end
 	if(is_numstr(str)) str+=0
 	if(str == "false")return false
 	if(str == "nil")return nil
-	return str=="true" and true
-	or str=="always_nil" and always_nil
-	or str=="always_true" and always_true
-	or str=="{}" and {}
-	or classtable[str] or str
-end
-
---[[
-extract an array stored in a string
-
-str: formatted as "v1,v2,v3"
---]]
-function str_to_array(str)
-	local arr = split(str,",")
-	for i=1,#arr do
-		arr[i]=str_to_val(arr[i])
-	end
-	return arr
+	return (str == "true") and true
+	or (str == "always_nil") and always_nil
+	or (str == "always_true") and always_true
+	or (str == "{}") and {}
+	or classtable[str]
+	or str
 end
 
 --[[
@@ -222,19 +142,47 @@ from that memory address
 str: formatted as "k1=v1,k2=v2"
 [tab]:optional destination table
 --]]
+
 function str_to_table(str,tab)
-	local kvpairs,tab=
-	split(str,","),
-	tab or {}
-	foreach(kvpairs,
-	function(kv)
-		local k,v=unpack(split(kv,"="))
-		if(not k)log("no key for "..kv)
-		if(not v)log("no value for "..kv.." str="..str)
-		tab[str_to_val(k)]=str_to_val(v)
-	end)
+	local i,buf,tab,val=
+	0,"",tab or {},"null"
+	local key,c
+	--using "null" to indicate that no
+	--value was found makes it possible
+	--to add nil and false to tables
+	while #str>0 do
+		c,str = sub(str,1,1),sub(str,2)
+		if c== "," then
+			if(#buf>0)val=buf
+		elseif c=="=" then
+			key,buf=str_to_val(buf),""
+		elseif c== "{" then
+			local to_close=1
+			for i = 1,#str do
+				local c2=sub(str,i,i)
+				to_close += (c2=="{" and 1 or c2=="}" and -1 or 0)
+				if to_close == 0 then
+					val,str=c..sub(str,1,i),
+					sub(str,i+1)
+					break
+				end
+			end
+		else
+			buf=buf..c
+		end
+		if(#str==0 and #buf>0 and val=="null")val=buf
+		if val != "null" then
+			val=str_to_val(val)
+			if key then
+				tab[key]=val
+			else
+				add(tab,val)
+			end
+			key,val,buf=nil,"null",""
+		end
+	end
 	if tab.addr then
-		return str_to_table(mem_to_str(hexstr_to_num(tab.addr),hexstr_to_num(tab.len)),tab)
+		return str_to_table(mem_to_str(hexstr_to_num(tab.addr),hexstr_to_num(tab.len)))
 	end
 	return tab
 end
@@ -251,7 +199,7 @@ function str_to_list(str)
 		str=""
 		foreach(t,function(v) str=str..v.."," end)
 	end
-	return unpack(str_to_array(str))
+	return unpack(str_to_table(str))
 end
 
 --[[
@@ -298,24 +246,30 @@ of the list over x=8,y=8,
 and y=8-x
 --]]
 function point_mapping(str)
-	local hex_tbl,pt_tbl,mapped,offset,tfms=
-	split(str,","),{},{},point(8,8),
-	split("x=1,y=1 x=-1,y=1 x=1,y=-1 x=-1,y=-1"," ")
-	for i=1, #hex_tbl do
-		foreach(tfms,
-		function(transform)
-			local pts=hex_to_pts(hex_tbl[i],
-			function(p)
-				return (p-offset)*point(transform)+offset
-			end)
-			if pts then
-				local key=#pts[1]
-				if not mapped[key] then
-					add(pt_tbl,pts)
-					mapped[key]=true
+	local pt_tbl,mapped,offset,
+	tfms,i,hex=
+	{},{},point(8,8),
+	str_to_table"{1,1},{-1,1},{1,-1},{-1,-1}",1
+	while i<=#str do
+		if sub(str,i,i) == "," then
+			str,hex,i=sub(str,i+1),
+			sub(str,1,i-1),1
+			foreach(tfms,
+			function(transform)
+				local pts=hex_to_pts(hex,
+				function(p)
+					return (p-offset)*point(unpack(transform))+offset
+				end)
+				if pts then
+					local key=#pts[1]
+					if not mapped[key] then
+						add(pt_tbl,pts)
+						mapped[key]=true
+					end
 				end
-			end
-		end)
+			end)
+		end
+		i+=1
 	end
 	return pt_tbl
 end
@@ -329,9 +283,12 @@ coroutine that runs fn()
 fn: any function taking no params
 --]]
 function coroutine(fn)
+	--fn()
+	--[
 	local routine=cocreate(fn)
 	update_routines(routine)
 	coresume(routine)
+	--]
 end
 
 --[[
@@ -372,7 +329,7 @@ order
 --]]
 function unpack(t,index,last)
 	if is_string(t) then
-		t= str_to_array(t)
+		t= str_to_table(t)
 	end
 	index,last=index or 1,last or #t
 	if(index>last)return
@@ -518,6 +475,10 @@ iterates over a probability table
 
 tbl: each key is a class name,
 	with a value <= 1000.
+	each of these classes has a
+	flr_mult(floor multiplier) value,
+	which alters probability based on the
+	current floor
 fn: if rnd(1000) is less than
 	that value, look up the class in
 	the class table and pass it to fn.
@@ -528,7 +489,7 @@ return:true if fn returned true
 function prob_tbl(tbl,fn)
 	if(not tbl)return true
 	return tbl and foreach_pair(tbl,function(v,k)
-		if rnd(1000) < v then
+		if rnd(1000) < v+lvl_floor*k.flr_mult then
 			if(fn(k)) return true
 		end
 	end)
@@ -610,13 +571,13 @@ start_msg,turn_msg,end_msg)
 	turn_routine(turn,duration,function()
 		if(target.hp<=0)return
 		if(visible(target))name_msg(target,turn_msg)
-		log("effect on "..turn..", duration "..duration)
+		--log("effect on "..turn..", duration "..duration)
 		on_turn()
 	end)
 	turn_routine((turn+duration)%1000,1,function()
 		if(target.hp<=0)return
 		if(visible(target))name_msg(target,end_msg)
-		log("effect over on "..turn)
+		--log("effect over on "..turn)
 		on_end()
 	end)
 end
@@ -635,8 +596,8 @@ function sleep(target)
 	status_effect(target,rndint(10,8),
 			function() target+=1 end,
 			function()
-			if(target==you)ctrl=default_ctrl
-			target.sleeping=false
+				if(target==you)ctrl=default_ctrl
+				target.sleeping=false
 			end,
 			" fell asleep.",
 			" is fast asleep.",
@@ -657,14 +618,14 @@ return:true if c was able to use
 --]]
 function use(itm,c)
 	if itm.use then
-		start_turn()
 		local fx=itm.use_sfx
 		if(c==you) msg(itm.use_msg) menu_close_all()
-		if(fx)sfx(fx)
+		if(fx and visible(c))sfx(fx)
 		itm:use(c)
 		if itm.qty then
 			itm:change_qty(-1)
 		end
+		start_turn()
 		return true
 	end
 end
@@ -1438,8 +1399,8 @@ end
 	diagonally adjacent tiles are
 	not counted, defaults to false
 --]]
-function next_to
-(pos,class,skip_diag)
+function next_to(pos,class,
+	skip_diag)
 	local num_found=0
 	foreach_adj(pos,
 	function(p,t)
@@ -1607,7 +1568,7 @@ represents things with a location
 within a level map
 --]]
 entity = object:subclass
-	"classname=entity,name=entity,color=8,sprite=93"
+	"classname=entity,name=entity,color=8,sprite=93,flr_mult=0"
 
 --[[
 if given an initial position,
@@ -1713,7 +1674,7 @@ end
 food items restore hit points
 --]]
 meat= item:subclass
-"classname=meat,sprite=70,name=meat,color=14,hp_boost=5,use_msg=you feel much better.,use_sfx=5"
+"classname=meat,sprite=70,name=meat,color=14,hp_boost=5,flr_mult=10,use_msg=you feel much better.,use_sfx=5"
 function meat:use(c)
 	c+=self.hp_boost
 end
@@ -1722,7 +1683,7 @@ apple=meat:subclass
 "classname=apple,sprite=71,name=apple,color=8,hp_boost=3,use_msg=you feel a bit better."
 
 bread=meat:subclass
-"classname=bread,sprite=72,name=bread,color=8,hp_boost=6"
+"classname=bread,sprite=72,name=bread,color=8,hp_boost=6,flr_mult=10"
 
 --[[
 statues block off the tile they're
@@ -1749,6 +1710,7 @@ on use
 --]]
 color_coded_itm=item:subclass
 "classname=color_coded_itm"
+
 function color_coded_itm:classgen()
 	self.num_types,self.types=
 	#self.names,{}
@@ -1758,7 +1720,7 @@ function color_coded_itm:classgen()
 	function(v,k)
 		types{
 			name= v .." "..self.classname,
-			color = k
+			color=k
 		}
 	end)
 	for i=1,self.num_types do
@@ -1812,7 +1774,7 @@ function color_coded_itm:use(c)
 	self:on_use(c)
 end
 
-potion=color_coded_itm:subclass"classname=potion,sprite=65,color=13,use_sfx=4,throw_sfx=7,names=1:healing;2:vision;3:poison;4:wisdom;5:sleep;6:lethe;7:water;8:juice;9:spectral;10:toughness;11:blindness,messages=1:you are healed;2:you see everything!!;3:you feel sick;4:you feel more experienced;5:you fell asleep;6:where are you?;7:refreshing!;8:yum;9:you feel ghostly;10:nothing can hurt you now!;11:who turned out the lights?,colors=0:murky;1:viscous;2:fizzing;3:grassy;4:umber;5:ashen;6:smoking;7:milky;8:bloody;9:orange;10:glowing;11:lime;12:sky;13:reeking;14:fragrant;15:bland"
+potion=color_coded_itm:subclass"classname=potion,sprite=65,color=13,use_sfx=4,throw_sfx=7,flr_mult=10,names={1=healing,2=vision,3=poison,4=wisdom,5=sleep,6=lethe,7=water,8=juice,9=spectral,10=toughness,11=blindness},messages={1=you are healed,2=you see everything!,3=you feel sick,4=you feel more experienced,5=you fell asleep,6=where are you?,7=refreshing!,8=yum,9=you feel ghostly,10=nothing can hurt you now!,11=who turned out the lights?},colors={0=murky,1=viscous,2=fizzing,3=grassy,4=umber,5=ashen,6=smoking,7=milky,8=bloody,9=orange,10=glowing,11=lime,12=sky,13=reeking,14=fragrant,15=bland}"
 potion:classgen()
 function potion:on_use(c)
 
@@ -1914,7 +1876,7 @@ mushrooms mostly have minor effects,
 usually bad. beware the deathcap.
 --]]
 mushroom=color_coded_itm:subclass
-"classname=mushroom,sprite=67,color=4,names=1:tasty;2:disgusting;3:deathcap;4:magic,messages=1:that was delicious;2:that was awful;3:you feel deathly ill;4:look at the colors!,colors=1:speckled;3:moldy;6:chrome;8:bleeding;14:lovely;15:fleshy"
+"classname=mushroom,sprite=67,use_sfx=5,color=4,names={1=tasty,2=disgusting,3=deathcap,4=magic},messages={1=that was delicious,2=that was awful,3=you feel deathly ill,4=look at the colors!},colors={1=speckled,3=moldy,6=chrome,8=bleeding,14=lovely,15=fleshy}"
 mushroom:classgen()
 function mushroom:on_use(c)
 	local type=self.type
@@ -1936,7 +1898,7 @@ creature status, scrolls interact
 with the level map
 --]]
 scroll=color_coded_itm:subclass
-"classname=scroll,sprite=66,use_sfx=3,names=1:movement;2:wealth;3:summoning,messages=1:you are somewhere else;2:riches appear around you;3:you have company!,colors=0:filthy;1:denim;4:tattered;6:faded;8:ominous"
+"classname=scroll,sprite=66,use_sfx=3,flr_mult=10,names={1=movement,2=wealth,3=summoning},messages={1=you are somewhere else,2=riches appear around you,3=you have company!},colors={0=filthy,1=denim,4=tattered,6=faded,8=ominous}"
 scroll:classgen()
 function scroll:on_use(c)
 	local type=self.type
@@ -1957,7 +1919,7 @@ function scroll:on_use(c)
 	end
 end
 
-equipment=item:subclass"classname=equipment,bonuses=hitbonus:1"
+equipment=item:subclass"classname=equipment,bonuses={hitbonus=1}"
 
 function equipment:equip(c)
 	local equip_slot,itm=self.equip_slot,
@@ -1995,7 +1957,7 @@ a weak weapon and extend sight
 radius
 --]]
 torch = equipment:subclass
-	"classname=torch,sprite=64,name=torch,sight_rad=4,color=10,equip_slot=weapon,bonuses=sight_rad:1;dmin_boost:1;dmax_boost:1"
+	"classname=torch,sprite=64,name=torch,sight_rad=4,color=10,equip_slot=weapon,bonuses={sight_rad=1,dmin_boost=1,dmax_boost=1}"
 
 	--[[
 	run fn(p,t) for each map tile
@@ -2033,7 +1995,7 @@ accuracy boosts. also decent as
 a thrown weapon
 --]]
 knife = equipment:subclass
-	"classname=knife,sprite=68,name=knife,color=6,equip_slot=weapon,throw_sfx=8,dthrown=4,bonuses=hit_boost:5;dmin_boost:1;dmax_boost:2"
+	"classname=knife,sprite=68,name=knife,color=6,equip_slot=weapon,throw_sfx=8,dthrown=4,flr_mult=10,bonuses={hit_boost=5,dmin_boost=1,dmax_boost=2}"
 
 --[[
 a strong weapon, but landing hits
@@ -2042,7 +2004,7 @@ not meant as a thrown weapon but
 better than throwing apples
 --]]
 sword = knife:subclass
-	"classname=sword,sprite=69,name=sword,color=6,equip_slot=weapon,dthrown=3,bonuses=hit_boost:-10;dmin_boost:3;dmax_boost:6"
+	"classname=sword,sprite=69,name=sword,color=6,equip_slot=weapon,dthrown=3,flr_mult=1,bonuses={hit_boost=-10,dmin_boost=3,dmax_boost=6}"
 
 --[[
 only slightly better than a torch
@@ -2050,19 +2012,19 @@ as an equipped weapon, but
 very effective when thrown.
 --]]
 	tomahawk = knife:subclass
-	"classname=tomahawk,sprite=73,name=tomahawk,equip_slot=weapon,dthrown=8,bonuses=hit_boost:5;dmin_boost:1;dmax_boost:1"
+	"classname=tomahawk,sprite=73,name=tomahawk,equip_slot=weapon,dthrown=8,flr_mult=1,bonuses={hit_boost=5,dmin_boost=1,dmax_boost=1}"
 
 	plate_armor = equipment:subclass
-	"classname=plate_armor,sprite=75,name=plate armor,equip_slot=armor,bonuses=ac:3"
+	"classname=plate_armor,sprite=75,name=plate armor,equip_slot=armor,flr_mult=5,bonuses={ac=3}"
 	leather_armor = equipment:subclass
-	"classname=leather_armor,sprite=76,name=leather armor,equip_slot=armor,bonuses=ac:1"
+	"classname=leather_armor,sprite=76,name=leather armor,equip_slot=armor,flr_mult=10,bonuses={ac=1}"
 	spiked_armor = equipment:subclass
-	"classname=spiked_armor,sprite=77,name=spiked armor,equip_slot=armor,bonuses=ac:2;dmin_boost:2"
+	"classname=spiked_armor,sprite=77,name=spiked armor,equip_slot=armor,flr_mult=10,bonuses={ac=2,dmin_boost=2}"
 	warded_armor = equipment:subclass
-	"classname=warded_armor,sprite=78,name=warded armor,equip_slot=armor,bonuses=ac:6"
+	"classname=warded_armor,sprite=78,name=warded armor,equip_slot=armor,flr_mult=1,bonuses={ac=6}"
 
 	ring = equipment:subclass
-		"classname=ring,sprite=80,name=ring,equip_slot=rings,bonuses=ac:1"
+		"classname=ring,sprite=80,name=ring,equip_slot=rings,flr_mult=5,bonuses={ac=1}"
 
 	--[[
 ------creature class-------------
@@ -2278,19 +2240,19 @@ end
 
 --weakest enemy class, usually not much of a threat
 rat = creature:subclass
-"classname=rat,name=rat,sprite=144,hp_max=5,sight_rad=6,item_table=meat:900;knife:10"
+"classname=rat,name=rat,sprite=144,hp_max=5,sight_rad=6,flr_mult=-10,item_table={meat=200,knife=10}"
 
 --slightly stronger, usually armed
 kobold=rat:subclass
-"classname=kobold,name=kobold,sprite=131,hp_max=8,exp=4,min_dmg=1,max_dmg=5,ac=1,item_table=torch:600;knife:400;leather_armor:100"
+"classname=kobold,name=kobold,sprite=131,hp_max=8,exp=4,min_dmg=1,max_dmg=5,ac=1,item_table={torch=600,apple=200,knife=400,leather_armor=100}"
 
 --vicious but innacurate
 mantid=rat:subclass
-"classname=mantid,name=mantid,sprite=147,hp_max=12,hitrate=60,min_dmg=4,max_dmg=8,exp=10,item_table=potion:1000;meat:500"
+"classname=mantid,name=mantid,sprite=147,hp_max=12,hitrate=60,min_dmg=4,max_dmg=8,exp=10,flr_mult=10,item_table={potion=800,meat=500}"
 
 --powerful guards
 watcher=mantid:subclass
-"classname=watcher,name=watcher,sight_rad=10,sprite=176,hp_max=20,hitrate=95,min_dmg=3,max_dmg=6,ac=3,exp=20,item_table=knife:500;sword:1000;bread:800;potion:400;spiked_armor:200"
+"classname=watcher,name=watcher,sight_rad=10,sprite=176,hp_max=20,hitrate=95,min_dmg=3,max_dmg=6,ac=3,exp=20,item_table={knife=500,sword=1000,bread=800,potion=400,spiked_armor=200}"
 function watcher:init(params)
 	creature.init(self,params)
 	self.guard_pos=-self.pos
@@ -2298,7 +2260,7 @@ end
 
 --player class
 player = creature:subclass
-"classname=player,name=rogue,color=7,sprite=128,hp_max=10,hitrate=85,min_dmg=1,max_dmg=5,take_turn=always_nil,item_table=bread:1000;apple:800;meat:200;torch:1000;potion:500;scroll:500"
+"classname=player,name=rogue,color=7,sprite=128,hp_max=10,hitrate=85,min_dmg=1,max_dmg=5,take_turn=always_nil,item_table={bread=1000,apple=800,meat=200,torch=1000,potion=500,scroll=500}"
 
 function player:move(d)
 	if(redraw>frame and not gameover) creature.move(self,d)
@@ -2336,19 +2298,19 @@ wall = tile:subclass
 	"classname=wall,sprite=16,alt_sprite=17,color=6"
 
 dungeon_floor = floor:subclass
-"classname=dungeon_floor,item_table=torch:10;knife:10;potion:15;scroll:15;mushroom:10;bread:20;plate_armor:10;leather_armor:10,spawn_table=rat:100;kobold:200;mantid:20"
+"classname=dungeon_floor,item_table={knife=5,potion=5,scroll=5,mushroom=5,bread=8,plate_armor=1,leather_armor=0},spawn_table={rat=100,kobold=200,mantid=20}"
 
 dungeon_wall = wall:subclass
 	"classname=dungeon_wall"
 
 cave_floor=floor:subclass
-	"classname=cave_floor,sprite=3,alt_sprite=4,color=0,item_table=torch:20;apple:10;mushroom:50;potion:10;leather_armor:5,spawn_table=rat:400"
+	"classname=cave_floor,sprite=3,alt_sprite=4,color=0,item_table={torch=20,apple=10,mushroom=50,potion=5,leather_armor=2},spawn_table={rat=400}"
 
 cave_wall=wall:subclass
 	"classname=cave_wall,sprite=0,alt_sprite=1,color=1"
 
 temple_floor=floor:subclass
-	"classname=temple_floor,sprite=35,alt_sprite=36,color=11,item_table=torch:20;knife:40;tomahawk:20;sword:20;potion:50;scroll:50;ring:10;spiked_armor:10;warded_armor:5,spawn_table=kobold:900;mantid:500"
+	"classname=temple_floor,sprite=35,alt_sprite=36,color=11,item_table={knife=40,tomahawk=20,sword=20,potion=50,scroll=50,ring=10,spiked_armor=5,warded_armor=2},spawn_table={kobold=900,mantid=500}"
 
 throne=floor:subclass
 	"classname=throne,sprite=34,color=11"
@@ -2360,14 +2322,15 @@ temple_wall=wall:subclass
 		"classname=temple_wall,sprite=32,alt_sprite=33,color=12"
 
 door = tile:subclass
-	"classname=door,sprite=21,color=9"
-function door:on_move()
-	if(self.solid)self:use()
+	"classname=door,sprite=21,color=9,use_sfx=9"
+function door:on_move(mover)
+	if(self.solid)use(self,mover.pos)
 end
 
 function door:use()
 	local s_change = self.solid and 1 or -1
 	self.solid=not self.solid
+	self.use_sfx+=s_change
 	self.sprite+=s_change
 	self.color+=s_change
 end
@@ -2400,7 +2363,7 @@ function stair:use()
 		foreach_pair(classtable,
 		function(cl)
 			if rat<cl then
-				cl.exp+=flr(cl.exp*.5)
+				--cl.exp+=flr(cl.exp*.5)
 				cl.hp_max+=2
 				cl.min_dmg+=1
 				cl.max_dmg+=1
@@ -2421,7 +2384,7 @@ end
 function build_level()
 	--load pre-designed level features
 	--from memory
-	local f_lists=split(	mem_to_str(0x264e,0x4c0),"&")
+	local f_lists=str_to_table"addr=264e,len=630"
 	local top_percent,range,ftimer=
 	100-#f_lists,4,timer()
 	ctrl,building,
@@ -2522,51 +2485,64 @@ function build_level()
 				range)
 			end
 		end
+		--remove unneeded doors
+		foreach_tile(function(p,t)
+			if door<t and
+			next_to(p,floor,true) !=2 then
+				set_tile(p,dungeon_wall())
+			end
+		end)
+
 		--place pre-designed structures
 		for i=1,#f_lists do
-			--log("attempting to place structure "..i.." of "..#f_lists)
-			local f_list,validating=
-			str_to_array(f_lists[i]),true
-			local attempts,build_count=f_list[1],f_list[2]
-			del(f_list,attempts)
-			del(f_list,build_count)
+			local feature=f_lists[i]
+			if(is_string(feature))log(feature)
+			local attempts,build_count=
+			feature.try,feature.max or 1
 			rnd_pos(function(p,t)
 				attempts-=1
 				--build_percent=(flr(build_percent).."."..(900-attempts))+0
 				if(attempts < 1)return true
 				ftimer()
-				for i=0,3 do
-					local class
-					for k in all(f_list) do
-						validating,class=
-						k!=">" and validating,
-						#k==0 and k or class
-						if #k >1 then
-							k=#k==4 and rectangle(unpack(k))
-							or point(unpack(k))
-							k=(k+p):rotate(p,i)
-							if validating then
-								if(not in_bounds(k)) break
-								if k.w then
-								 if(not rect_empty(k,class))break
-								elseif not (class<get_tile(k))
-									then break
-								end
-							else
-								if tile<class then
-									if k.w then
-										set_rect(k,class)
-									else
-										set_tile(k,class())
-									end
-								end
-								if(entity<class) class(k)
-							end
-						end
+				for rot=0,3 do
+					function foreach_class(tbl,fn)
+						return foreach_pair(tbl,
+						function(pos,class)
+							return foreach(pos,
+							function (k)
+								k=(#k==4 and rectangle or point)(unpack(k))
+								k=(k+p):rotate(p,rot)
+								return fn(k,class)
+							end)
+						end)
 					end
-					if not validating then
+					if not foreach_class(feature.val,
+					function(pos,class)
+						if(not in_bounds(pos))return true
+						if rectangle<pos then
+							if(not rect_empty(pos,class)) return true
+						else
+							if(not (class<get_tile(pos))) return true
+						end
+						--[[
+						return not in_bounds(pos) or
+						pos.w and not rect_empty(pos,class)
+						or not (class<get_tile(pos))
+						--]]
+					end) then
+						foreach_class(feature.bld,
+						function(pos,class)
+							if tile<class then
+								if pos.w then
+									set_rect(pos,class)
+								else
+									set_tile(pos,class())
+								end
+							elseif entity<class then
+								class(pos)
+							end
+						end)
 						build_count -=1
-						validating=true
 						if(build_count<1)return true
 					end
 				end
@@ -2659,7 +2635,7 @@ end
 function menu_close()
 	active_menu,redraw =
 	-open_menus, frame
-	if(not active_menu)ctrl=default_ctrl
+	if(not active_menu and ctrl==menu_ctrl)ctrl=default_ctrl
 end
 
 function menu_close_all()
@@ -2964,7 +2940,7 @@ function _init()
 	rectangle()*16,
 	loading_ctrl,
 	rnd_pos(always_true),
-	str_to_list"0,false,0,0,0,7,1,true,true,0,0;0;0,weapon;armor;rings"
+	str_to_list"0,false,0,0,0,7,1,true,true,0,{0,0,0},{weapon,armor,rings}"
 	you,draw_tbl,los_tbl =
 	player(build_pos),
 	point_mapping(mem_to_str(0x2000,0x284)),{}
@@ -2997,9 +2973,9 @@ function _update()
 		frame,false
 		local exp=you.exp
 		you.hp_max,you.max_dmg,you.hitrate=
-		10+flr(exp/10),
-		player.max_dmg+flr(exp/10),
-		80+exp/10
+		10+flr(exp/30),
+		player.max_dmg+flr(exp/100),
+		80+exp/100
 		local score={exp,kills,lvl_floor}
 		for i=1,3 do
 			high_scores[i]=max(score[i],dget(i))
@@ -3122,21 +3098,21 @@ end
 
 __gfx__
 12022201120220311202220111111111555155550000000000000000120222010122210000000000000000000000000000000000000000000000000000000000
-212002201c1020312120022015551111511113350222200006666660212000201200021000000000000000000000000000000000000000000000000000000000
-202110202c103031202110205511551533113133266112000ddddd10202110201200021000000000000000000000000000000000000000000000000000000000
-22021020230230212202102011551155533551152ddd120006666220220210202000002000000000000000000000000000000000000000000000000000000000
-02021021230c3021020210211115511133553311266662000ddd1210020210212000002000000000000000000000000000000000000000000000000000000000
-02021021102c10210202102155111555133333332ddddd0006622110020210212000002000000000000000000000000000000000000000000000000000000000
-12021210022c02111202121015555111513335532666666002121220120210202000002000000000000000000000000000000000000000000000000000000000
+212002201c1020312120022015551111511113350222200005555550212000201200021000000000000000000000000000000000000000000000000000000000
+202110202c103031202110205511551533113133255112000ddddd10202110201200021000000000000000000000000000000000000000000000000000000000
+22021020230230212202102011551155533551152ddd120005555220220210202000002000000000000000000000000000000000000000000000000000000000
+02021021230c3021020210211115511133553311255552000ddd1210020210212000002000000000000000000000000000000000000000000000000000000000
+02021021102c10210202102155111555133333332ddddd0005522110020210212000002000000000000000000000000000000000000000000000000000000000
+12021210022c02111202121015555111513335532555555002121220120210202000002000000000000000000000000000000000000000000000000000000000
 1202221002222011120222101111111155115511dddddddd00000000120210201000001000000000000000000000000000000000000000000000000000000000
-1201120112011201222222221111111111111111120112011201120112111001126112610000000000000000000000009aa009aa9aaaa0009a9a00000009a000
-6266626662666266200000021dd1222112221dd16999aaa66999aaa662666066622662260000000000000000000000009a00009a9a09a0009a9a000000009a00
-20112011200000012cdddd021dd1222112221dd1192211a1192000a12111011111000061000000000000000000000000000000009a09a00009a000009aaaaaa0
-26662666260bb7062cdddd021111122112211111690210a6692000a62666066666000026000000000000000000000000000000009a09a0009a9a000000009a00
-120112011203bb012cdddd021122111111112211190210a1192000a11211101110000006000000000000000000000000000000009aaaa0009a9a00000009a000
-62666266620000062ccddd021d221dd11dd122d1692211a6692000a6626660666000000200000000000000000000000000000000000000000000000000000000
-20112011201120112ccccc021dd11dd11dd11dd1190210a1192000a121112011100000060000000000000000000000009a00009a000000000000000000000000
-2666266626662666222222221111111111111111692211a6692000a626662066600000020000000000000000000000009aa009aa000000000000000000000000
+120112011201120122222222000000000000000012011201120112011211100112d112d10000000000000000000000009aa009aa9aaaa0009a9a00000009a000
+d2ddd2ddd2ddd2dd200000020110222001110220d999aaadd999aaadd2ddd0ddd22dd22d0000000000000000000000009a00009a9a09a0009a9a000000009a00
+20112011200000012cdddd020110222001110220192211a1192000a121110111110000d1000000000000000000000000000000009a09a00009a000009aaaaaa0
+2ddd2ddd2d0bb70d2cdddd020000022001100000d90210add92000ad2ddd0ddddd00002d000000000000000000000000000000009a09a0009a9a000000009a00
+120112011203bb012cdddd020022000000001100190210a1192000a1121110111000000d000000000000000000000000000000009aaaa0009a9a00000009a000
+d2ddd2ddd200000d2ccddd020122011002201120d92211add92000add2ddd0ddd000000200000000000000000000000000000000000000000000000000000000
+20112011201120112ccccc020110011002200220190210a1192000a1211120111000000d0000000000000000000000009a00009a000000000000000000000000
+2ddd2ddd2ddd2ddd222222220000000000000000d92211add92000ad2ddd20ddd00000020000000000000000000000009aa009aa000000000000000000000000
 33bbbb333333b3331b3333b11111111112211221b113b113b113b113333bb33333bbbb3300000000444444440000000000000000000000000000000000000000
 0bb10bb1013bcb31131222311b2222b12b1221b2bb3b1b3bbb3b0b3b03b00b313b0001b30000000048c080340000000000000000000000000000000000000000
 10b10b1103bcccb103112230121dd12121d11d12b3b313b3b3b000b310b00b111b0001b10000000048c289340000000000000000000000000000000000000000
@@ -3153,14 +3129,14 @@ __gfx__
 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c0000ccc00cc0011110001000000045555500
 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000cc00c00001110110000010046666660
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000cccc00110111010000000045555555
-0000070000000000000000000000000000000a0000000aaa0000000000000000000000000000000000aa90000000000000000000000000000000000000000000
-00007a8000099000007fff40000490000000a9000000aa8000044470000040000000000000094990009990000000000000000000000000000000000000000000
-0000aa800007700007fcff0000c4c9000000a900000aa8000444887000884b000099790000004690000a90000760076004400440060000700aa0087000000000
-0000e8000007700007cfff00044ccc900000a90009aa8000447888700288780004474970000040900aaa90000765576005455490088558800aa8877000000000
-00009400007cc70007cccf000444c99000008800099800004787887002888800047447900000400000a99000007666000044940000686800008aa80000000000
-0000940007c7cc7007ffff400009f0000000080099440000447887000228880004447440000040000aaaa90000766600004494000086870000a8870000000000
-00000400077cc770007ffff000009f000000000044000000048887000022200000444400000000000a999900007666000009900008087070008aa80000000000
-00000000007777000000000000000000000000000400000007777000000000000000000000000000000000000000000000000000000000000000000000000000
+0000070000000000000000000000000000000700000007770000000000000000000000000000000000aa90000000000000000000000000000000000000000000
+00007a8000099000007fff400004900000007a00000077a0000eee7000004000000000000007a770009990000000000000000000000000000000000000000000
+0000aa800007700007fcff0000c4c90000007a0000077a000eee887000884b0000aa7a000000a970000a90000760076008800880060000700aa0087000000000
+0000e8000007700007cfff00044ccc9000007a000977a000ee7888700288780009979a700000a0700aaa900007655760058558900ee55ee00aa8877000000000
+00009400007cc70007cccf000444c99000008800099a0000e787887002888800097997a00000a00000a990000076660000889800006e6e00008aa80000000000
+0000940007c7cc7007ffff400009f0000000080099880000ee78870002288800099979900000a0000aaaa900007666000088980000e6e70000a8870000000000
+00000400077cc770007ffff000009f000000000088000000088887000022200000999900000000000a99990000766600000990000e0e7070008aa80000000000
+00000000007777000000000000000000000000000800000007777000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00008000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
@@ -3193,14 +3169,14 @@ __gfx__
 0766766000766766067676000885588008885500088558000000000000000000000a9000a90a9000000000000000000000a90000000000000000000000000000
 0676667000676667066776000855558088885550085558000000000000000000000a900aa90a90aa0000aaa000aaa900aaaaa90aaa00000aaa0000aa0000aaa0
 0667776006667770777666008855558888855550885555800000000000000000000a90aa900aaaaa000aa0a900aaaa9000a900aa0a9000a00a900a9aa000a0a9
-ef0404000e044000ef0044700008b80000008b000bb000bb0000000000000000000aaaa0000a900a90a900a900a90aa900a90a900a9000aa0000a900a90aa000
-0e0747000f004740f04e4700000bbb000000bb000b00000b0000000000000000000a9000000a900a90a900a900a900a900a90a900a90000aa900a900a900aa90
-f0044400e002444ee0024470000ebe3b0000b0000b08380b0000000000000000000a9000000a900a90a900a900a900a900a90a900a900a000a90a900a9a000a9
-e0028200f2244220f22442207eeee33b66e0e3b00b4e3e4b0000000000000000000a9000000a900a000aa0a900a900a900a900aa0a9000a00a90aa9aa90a00a9
-f0222220224444002244422273ee330b6eee30b00b0eee0b0000000000000000000aaa00000aa00a9000aa0aa0aa00aa00a9900aa0aaa0aaa9000aaa900aaa90
-e024242024444240244440000733300b0ee330b0006eee0000000000000000000000000000000000000000000000000000000000000000000000000000000000
-ff24442024024240244444000555b0b0b555b0000b5e5e0000000000000000000000000000000000000000000000000000000000000000000000000000000000
-0e2242202402400024422400b0b0b0000b0b0000b0b0b0b000000000000000000000000000000000000000000000000000000000000000000000000000000000
+ef0f0f000e0ff000ef00ff800008b80000008b000bb000bb0000000000000000000aaaa0000a900a90a900a900a90aa900a90a900a9000aa0000a900a90aa000
+0e08f8000f00f8f0f0f8f800000bbb000000bb000b00000b0000000000000000000a9000000a900a90a900a900a900a900a90a900a90000aa900a900a900aa90
+f00fff00e004fff8e004ff80000aba3b0000b0000b08380b0000000000000000000a9000000a900a90a900a900a900a900a90a900a900a000a90a900a9a000a9
+e0048400f04efee0f004f0007aaaa33b66a0a3b00b4a3a4b0000000000000000000a9000000a900a000aa0a900a900a900a900aa0a9000a00a90aa9aa90a00a9
+f0444e00e4efff00e04efee073aa330b6aaa30b00b0aaa0b0000000000000000000aaa00000aa00a9000aa0aa0aa00aa00a9900aa0aaa0aaa9000aaa900aaa90
+e44fefe04efffef0e04ef4000733300b0aa330b0006aaa0000000000000000000000000000000000000000000000000000000000000000000000000000000000
+f4efffe04eee4ef004efff000555b0b0b555b0000b5a5a0000000000000000000000000000000000000000000000000000000000000000000000000000000000
+04eefee04e404e0004e4ef00b0b0b0000b0b0000b0b0b0b000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
@@ -3212,8 +3188,8 @@ ff24442024024240244444000555b0b0b555b0000b5e5e0000000000000000000000000000000000
 007770000077700000777000111111112222222233333333444444445555555566666666777777778888888899999999aaaaaaaabbbbbbbbccccccccdddddddd
 008780000078700000878007111111112222222233333333444444445555555566666666777777778888888899999999aaaaaaaabbbbbbbbccccccccdddddddd
 000700000005700000070007111111112222222233333333444444445555555566666666777777778888888899999999aaaaaaaabbbbbbbbccccccccdddddddd
-006560000056000000656670111111112222222233333333444444445555555566666666777777778888888899999999aaaaaaaabbbbbbbbccccccccdddddddd
-066566000656600006656600111111112222222233333333444444445555555566666666777777778888888899999999aaaaaaaabbbbbbbbccccccccdddddddd
+00e5e000005e000000e5ee70111111112222222233333333444444445555555566666666777777778888888899999999aaaaaaaabbbbbbbbccccccccdddddddd
+0ee5ee000e5ee0000ee5ee00111111112222222233333333444444445555555566666666777777778888888899999999aaaaaaaabbbbbbbbccccccccdddddddd
 055555000555550005555500111111112222222233333333444444445555555566666666777777778888888899999999aaaaaaaabbbbbbbbccccccccdddddddd
 058885000588880005888500111111112222222233333333444444445555555566666666777777778888888899999999aaaaaaaabbbbbbbbccccccccdddddddd
 088888000588880005888800111111112222222233333333444444445555555566666666777777778888888899999999aaaaaaaabbbbbbbbccccccccdddddddd
@@ -3266,20 +3242,20 @@ __map__
 0807080608050804080326050108070706070506040603060226030807080608050804082606060707260107070806080508040703070207260203070806070506040503042603010807070606050504050304022607040807080607052608082601000807070606050504040303020201260608070826020507080607050704
 0603062606030807070607050704260303070706060505040426040407070606050526070208070806080507040703260008070806080508040803080208010826060208070706070507040603260707260207070806080508040703072606000807080607050704070307020601260105070806070507040603060206260601
 0807080607050704070306022600010708060705060405030402030102260801080708060805080408030802260108070806080508040803080208260401080707060705060405030502260204070806070506040603052605030807070606050604260708260803080708060805080426070608072604030807070606050504
-26040807080608050826010407080607050704060305020526040507080607050626020008070706060505040503040203012603070708060805070407260000010102020303040405050606070709000026012611171a1a1d260027002631261e1f0c141d260027003b0105002601260e0c21102811171a1a1d260027002707
-27072631261f10181b171028220c171726012701270127022601270427012702260427012702270126042705270227012601270127022701260127052702270126052701270127022605270427012702261f10181b17102811171a1a1d260227032703270126032702270127032611171a1a1d281b100f101e1f0c1726032703
-261f10181b171028220c171726012701270127022601270427012702260427012702270126042705270227012601270127022701260127052702270126052701270127022605270427012702261f10181b17102811171a1a1d260327033b01000026042611171a1a1d2600270026002702260f1a1a1d260027012631260f2019
-12101a19281e100e1d101f280f1a1a1d260027013b0100002604260e0c211028220c17172600270126022701260e0c21102811171a1a1d260027002703270126012700270127032631260e0c2110281e100e1d101f280f1a1a1d26012701261f1a1d0e13260127013b010000260126211a140f260027012708270526220c1717
-26002700270827012631260f201912101a1928220c1717260127002706270426022700270327062600270127082702260027012707270326022700270427052601270027072703260f1a1a1d26032700270227042602270127042702260f201912101a192811171a1a1d2603270127022702260127022606270126032704261f
-1a1d0e132602270026052700261d14191226062701261e1f0c1f20102603270426220c1f0e13101d260127023b010000260126220c1717260327012611171a1a1d2603270026211a140f26002702270727062631261f10181b171028220c171726012702270527062600270327072703261f10181b17102811171a1a1d260227
-032703270226022706270327012603270127012706261f10181b1710280f1a1a1d2603270226032704270127022611171a1a1d281b100f101e1f0c172601270426052704261f131d1a191026032704261e1f0c1f2010260127042605270426220c1f0e13101d260327043b020000260126211a140f2600270227052705260e0c
-211028220c17172600270127052701260e0c21102811171a1a1d26002700270527012631260f201912101a1928220c17172600270127052706260e0c211028220c17172600270127052703260e0c21102811171a1a1d260127032703270126012701270127032611171a1a1d281b100f101e1f0c172601270126032701260f1a
-1a1d2602270427012702260f201912101a192811171a1a1d2601270527032701261e1f0c1f20102601270126032701261f1a180c130c22162603270526161a0d1a170f260127053b020000260226211a140f2600270227052701260e0c211028220c17172600270127052701260e0c21102811171a1a1d260027002705270126
-31260e0c211028220c171726002701270527022611171a1a1d281b100f101e1f0c172601270126032701261e1f0c1f201026012701260327013b01000026022611171a1a1d26002700270327032631261f10181b17102811171a1a1d26002700270327032611171a1a1d281b100f101e1f0c1726002701270327012601270027
-012703261e1f0c1f20102601270100270327032631261f10181b17102811171a1a1d26002700270327032611171a1a1d281b100f101e1f0c1726002701270327012601270027012703261e1f0c1f2010260127011a192811171a1a1d2601270527032701261e1f0c1f20102601270126032701261f1a180c130c221626032705
-26161a0d1a170f260127053b020000260526211a140f2600270227052701260e0c211028220c17172600270127052701260e0c21102811171a1a1d26002700270527012631260e0c211028220c171726002701270527022611171a1a1d281b100f101e1f0c172601270126032701261e1f0c1f201026012701260327013b0100
-002601260e0c21102811171a1a1d26002700270727072631261f10181b171028220c171726012701270127022601270427012702260427012702270126042705270227012601270127022701260127052702270126052701270127022605270427012702261f10181b17102811171a1a1d260227032703270126032702270127
-032611171a1a1d281b100f101e1f0c1726032703261f10181b171028220c171726012701270127022601270427012702260427012702270126042705270227012601270127022701260127052702270126052701270127022605270427012702261f10181b17102811171a1a1d26032703260327030624060108070806070507
+2604080708060805082601040708060705070406030502052604050708060705062602000807070606050504050304020301260307070806080507040726000001010202030304040505060607072c1f1d243509000026180c23350126210c17352c11171a1a1d352c2c0026002d2d2d260d170f352c1e1f0c141d352c2c0026
+002d2d2d2d262c1f1d243501050026180c23350126210c17352c0e0c21102811171a1a1d352c2c002600260726072d2d2d260d170f352c1f10181b171028220c1717352c2c012601260126022d262c012604260126022d262c042601260226012d262c042605260226012d262c012601260226012d262c012605260226012d26
+2c052601260126022d262c052604260126022d2d261f10181b17102811171a1a1d352c2c022603260326012d262c032602260126032d2d2611171a1a1d281b100f101e1f0c17352c2c0326032d2d2d2d262c1f1d243501000026180c23350426210c17352c11171a1a1d352c2c0026002d262c0026022d2d260f1a1a1d352c2c
+0026012d2d2d260d170f352c0f201912101a19281e100e1d101f280f1a1a1d352c2c0026012d2d2d262c1f1d243501000026180c23350426210c17352c0e0c211028220c1717352c2c0026012d262c0226012d2d260e0c21102811171a1a1d352c2c002600260326012d262c012600260126032d2d2d260d170f352c0e0c2110
+281e100e1d101f280f1a1a1d352c2c0126012d2d261f1a1d0e13352c2c0126012d2d2d2d262c1f1d243501000026180c23350126210c17352c211a140f352c2c002601260826052d2d26220c1717352c2c002600260826012d2d2d260d170f352c0f201912101a1928220c1717352c2c012600260626042d262c022600260326
+062d262c002601260826022d262c002601260726032d262c022600260426052d262c012600260726032d2d260f1a1a1d352c2c032600260226042d262c022601260426022d2d260f201912101a192811171a1a1d352c2c032601260226022d262c0126022d262c0626012d262c0326042d2d261f1a1d0e13352c2c0226002d26
+2c0526002d2d261d141912352c2c0626012d2d261e1f0c1f2010352c2c0326042d2d26220c1f0e13101d352c2c0126022d2d2d2d262c1f1d243501000026180c23350126210c17352c220c1717352c2c0326012d2d2611171a1a1d352c2c0326002d2d26211a140f352c2c002602260726062d2d2d260d170f352c1f10181b17
+1028220c1717352c2c012602260526062d262c002603260726032d2d261f10181b17102811171a1a1d352c2c022603260326022d262c022606260326012d262c032601260126062d2d261f10181b1710280f1a1a1d352c2c0326022d262c032604260126022d2d2611171a1a1d281b100f101e1f0c17352c2c0126042d262c05
+26042d2d261f131d1a1910352c2c0326042d2d261e1f0c1f2010352c2c0126042d262c0526042d2d26220c1f0e13101d352c2c0326042d2d2d2d262c1f1d243502000026180c23350126210c17352c211a140f352c2c002602260526052d2d260e0c211028220c1717352c2c002601260526012d2d260e0c21102811171a1a1d
+352c2c002600260526012d2d2d260d170f352c0f201912101a1928220c1717352c2c002601260526062d2d260e0c211028220c1717352c2c002601260526032d2d260e0c21102811171a1a1d352c2c012603260326012d262c012601260126032d2d2611171a1a1d281b100f101e1f0c17352c2c0126012d262c0326012d2d26
+0f1a1a1d352c2c022604260126022d2d260f201912101a192811171a1a1d352c2c012605260326012d2d261e1f0c1f2010352c2c0126012d262c0326012d2d261f1a180c130c2216352c2c0326052d2d26161a0d1a170f352c2c0126052d2d2d2d262c1f1d243502000026180c23350226210c17352c211a140f352c2c002602
+260526012d2d260e0c211028220c1717352c2c002601260526012d2d260e0c21102811171a1a1d352c2c002600260526012d2d2d260d170f352c0e0c211028220c1717352c2c002601260526022d2d2611171a1a1d281b100f101e1f0c17352c2c0126012d262c0326012d2d261e1f0c1f2010352c2c0126012d262c0326012d
+2d2d2d262c1f1d243501000026180c23350226210c17352c11171a1a1d352c2c002600260326032d2d2d260d170f352c1f10181b17102811171a1a1d352c2c002600260326032d2d2611171a1a1d281b100f101e1f0c17352c2c002601260326012d262c012600260126032d2d261e1f0c1f2010352c2c0126012d2d2d2d0c17
+352c11171a1a1d352c2c002600260326032d2d2d260d170f352c1f10181b17102811171a1a1d352c2c002600260326032d2d2611171a1a1d281b100f101e1f0c17352c2c002601260326012d262c012600260126032d2d1e1f0c1f2010352c2c0126012d2d2d2d2811171a1a1d26032703260327030624060108070806070507
 04070306022400010708060705060405030402030102240f0f09090a0a0b0b0c0c0d0d0e0e24080108070806080508040803080224010e07080609050a040b030c020d24060f0809080a070b070c070d060e240108070806080508040803080208240d0c09080a090b0a0c0b240e0909080a080b080c090d09240d0d09090a0a
 0b0b0c0c240d0509080a070b060c0624050e0809070a070b060c060d2404010807070607050604050305022402040708060705060406030524020a0708060905090409030a24050308070706060506042407082408030807080608050804240e0a09080a090b090c090d0a240a0e0809090a090b090c0a0d2407060807240403
 080707060605050424040807080608050824010407080607050704060305020524030a070806090509040924060a070924080a080924090f0809080a080b090c090d090e240d0609080a070b070c0724030b07080609050a040a2404050708060705062402000807070606050504050304020301240a09090824040e0809070a
@@ -3288,16 +3264,16 @@ __map__
 0508040803080208012405080708060824000307080607050604060305020501042402020707060605050404030324050c0809070a060b240304070806070506040524030e0809070a060b050c040d240e0c09080a090b0a0c0a0d0b24040907080608050924070c0809080a070b240700080708060805080407030702070124
 __sfx__
 010124010a1730a1730777306773057730a0732240321403204031f4031c2031e203202032320324203262032820328203222031320319403016030400303003020030b003084030900309403090030a4030a003
-000d240103410066200161001100011000710006100051001a10015100131020b100132002320024200262002820028200222001320019400016000400003000020020b000084000900009400090000a4000a000
+010d240103410066200161001100011000710006100051001a10015100131020b100132002320024200262002820028200222001320019400016000400003000020020b000084000900009400090000a4000a000
 000208060c03002620026501b5500665006000155020c400090000a0000b4002440008400080000840008000080020c00008400090000a4000a0000b400240000640007002034000700006000054000440024400
-012000000f072070720f072060720e072060720f002050020e0020500210502050020c00207102010020100202002010020100201002010020150201502174021740215402134021240213402124021340209002
+012000000f072070720f072110720e072060720f002050020e0020500210502050020c00207102010020100202002010020100201002010020150201502174021740215402134021240213402124021340209002
 0107240a036110c0710c07104001040010f0010400104001036110c0710c0710f0010f0010f001060010a001036110c0710c0710e0010700108001080010700124001080010c0010800109001090010a0010b001
-01110000096410b171091710d6210b171091710a6410960105101041010c60102201012010d60102701017010f60103401034010440106101071010c1010d1012410102101071010610105101041010310102101
+01140000096110b111091000d61109111091010a6110960105101041010c60102201012010d60102701017010f60103401034010440106101071010c1010d1012410102101071010610105101041010310102101
 001000000136503205052053f2053f205222052220502205022050220504205022050320501205012050e20524205042050820507205072050620505205012050220502205022050120501205012050220504205
-0107080702006376563435634356343562d656353562a656126063a506125060f006090060a0060b0060c0060d0060e006050060700606006240060e006090060a0060b0060c0060d00604006070060600605006
+0107080702007376273432734327343272d627353272a627126073a507125070f007090070a0070b0070c0070d0070e007050070700706007240070e007090070a0070b0070c0070d00704007070070600705007
 012400003f2650d000090000a0000b0000c000244000940008000090020a4000840009000094000900024400094000800008400080000940009000090020b40008400090000a4000a00024000084000800008400
-050404240704006430054300403003030240100943008030084200802009410090220645008440070502403003040074300643005430040220f060090400a4400b4400c0500d4500e45024410034300703006420
-0008070808070084400805008450080600846024020044300703006420050220c430090400a0400b430240300c040094300a4300b022070100843008030084200702007410244600744008050084500706007022
+0105000003220032200222004220052200b2000920008200082000820009200092000620008200072002420003200072000620005200042000f200092000a2000b2000c2000d2000e20024200032000720006200
+0110000005120016230110001603016030840324003044030700306403050030c403090030a0030b403240030c003094030a4030b003070030840308003084030700307403244030740308003084030700307003
 070a060b060400504004040030400204001040240300204007430064300543004030030220546008440070500645006060240500a4400902207430244000a43008030084200902009410090100a0220446008440
 0507080605060244500e040094400a4400b0500c0500d022004700704006440050500445003060024600107024010074300803008420080200741007022060000843008030074200702007410070100640024400
 050804080742007020064100601006022064000843008030074200702007410060102400001430080300742006020054100401003400020220f470094400a0500b4500c0600d4600e07024040010400704006040
@@ -3416,3 +3392,4 @@ __music__
 00 01004344
 00 41424344
 00 41424344
+
