@@ -14,7 +14,7 @@ licenses/by/4.0/
 --[[
 sfx
 walking:0
-blocked attack:1
+missed attack:1
 attack:2
 scroll:3
 potion:4
@@ -75,10 +75,16 @@ end
 	converted to a number. odd uses
 	of number symbols (e.g) "05.6.7"
 	, "--.....-." etc will cause
-	false positives
+	false positives.
+
+	strings with more than six
+	characters will always return
+	false, to sidestep problems i
+	had with the integer limit.
 	--]]
 function is_numstr(str)
-	if is_string(str) and #str>0 then
+	if is_string(str) and #str>0
+	and #str<6 then
 		for i=1,#str do
 			local char = chartable[sub(str,i,i)]
 			if(not char or char>11)return
@@ -87,20 +93,6 @@ function is_numstr(str)
 	end
 end
 
---[[
-return true if str contains at
-least one of the characters in
-match.
---]]
-function str_contains(str,match)
-	if is_string(str) then
-		for i = 1, #str do
-			for k = 1,#match do
-				if (sub(str,i,i) == sub(match,k,k))return true
-			end
-		end
-	end
-end
 
 --[[
 recognizes non-string values
@@ -144,6 +136,7 @@ str: formatted as "k1=v1,k2=v2"
 --]]
 
 function str_to_table(str,tab)
+	if(not is_string(str))return str
 	local i,buf,tab,val=
 	0,"",tab or {},"null"
 	local key,c
@@ -188,54 +181,12 @@ function str_to_table(str,tab)
 end
 
 --[[
-extract a sequence of values
-stored in a string
-str:can define a table or array
-	string
---]]
-function str_to_list(str)
-	local t = is_table(str) and str
-	if t then
-		str=""
-		foreach(t,function(v) str=str..v.."," end)
-	end
-	return unpack(str_to_table(str))
-end
-
---[[
 convert hex strings to number data
 hexstr: a hex string, without
 	the '0x' prefix
 --]]
 function hexstr_to_num(hexstr)
 	return ("0x"..hexstr)+0
-end
-
---[[
-extract a series of points
-stored as a hex string
-transform:optional transformation
-function to apply to each point
---]]
-function hex_to_pts(hexstr,transform)
-	transform=transform or
-	function(p) return p end
-	local pts = {}
-	function hexpop()
-		local num=
-		hexstr_to_num(sub(hexstr,1,1))
-		hexstr = sub(hexstr,2)
-		return num
-	end
-	while #hexstr > 1 do
-		local pt=transform(point(hexpop(),hexpop()))
-		if pt.x<16 and pt.y<16 then
-			add(pts,pt)
-		elseif #pts==0
-			then return
-		end
-	end
-	return pts
 end
 
 --[[
@@ -247,30 +198,36 @@ and y=8-x
 --]]
 function point_mapping(str)
 	local pt_tbl,mapped,offset,
-	tfms,i,hex=
+	tfms=
 	{},{},point(8,8),
-	str_to_table"{1,1},{-1,1},{1,-1},{-1,-1}",1
-	while i<=#str do
-		if sub(str,i,i) == "," then
-			str,hex,i=sub(str,i+1),
-			sub(str,1,i-1),1
-			foreach(tfms,
-			function(transform)
-				local pts=hex_to_pts(hex,
-				function(p)
-					return (p-offset)*point(unpack(transform))+offset
-				end)
-				if pts then
-					local key=#pts[1]
-					if not mapped[key] then
-						add(pt_tbl,pts)
-						mapped[key]=true
-					end
+	str_to_table"{1,1},{-1,1},{1,-1},{-1,-1}"
+	str=str_to_table(str)
+	foreach(str,function(hex)
+		foreach(tfms,function(transform)
+			local pts,hexstr = {},""..hex
+			if(#hexstr%2 == 1)hexstr="0"..hexstr
+			function hexpop()
+				local num=
+				hexstr_to_num(sub(hexstr,1,1))
+				hexstr = sub(hexstr,2)
+				return num
+			end
+			while #hexstr > 1 do
+				local pt=(point(hexpop(),hexpop())-offset)
+				* point(unpack(transform))+offset
+				if pt.x<16 and pt.y<16 then
+					add(pts,pt)
+				elseif #pts==0 then
+					return
 				end
-			end)
-		end
-		i+=1
-	end
+			end
+			local key=#pts[1]
+			if not mapped[key] then
+				add(pt_tbl,pts)
+				mapped[key]=true
+			end
+		end)
+	end)
 	return pt_tbl
 end
 
@@ -327,13 +284,19 @@ end
 returns all items in array t, in
 order
 --]]
-function unpack(t,index,last)
-	if is_string(t) then
-		t= str_to_table(t)
+function unpack(t,index)
+	t,index=str_to_table(t),
+	str_to_table(index) or 1
+	local key = index
+	if is_table(index) then
+		key=index[1]
+		if(#index==0) return
+		del(index,key)
+	else
+		index+=1
+		if(key>#t)return
 	end
-	index,last=index or 1,last or #t
-	if(index>last)return
-	return t[index],unpack(t,index+1,last)
+	return t[key],unpack(t,index)
 end
 
 
@@ -432,7 +395,7 @@ returns true if table t contains
 value v
 --]]
 function contains(t,v)
-	return foreach(t,
+	return foreach_pair(t,
 	function(val)
 		if(val == v) return true
 	end)
@@ -447,7 +410,7 @@ rmax: maximum value,inclusive
 defaults to 1
 --]]
 function rndint(rmax,rmin)
-rmin = rmin or 1
+rmin=rmin or 1
 return rmin + flr(rnd(1+rmax-rmin))
 end
 
@@ -495,6 +458,43 @@ function prob_tbl(tbl,fn)
 	end)
 end
 
+--[[
+add n1 to n2, where n2 is some
+value that loops at 1000
+--]]
+function loop_add(n1,n2)
+	return (n1+n2)%1000
+end
+
+--[[
+loop comparison.
+if the difference is greater than
+500, assume the value looped and
+the lower value is greater
+--]]
+function loop_lt(n1,n2)
+	if(abs(n1-n2)>500)return n2<n1
+	return n1<n2
+end
+
+function loop_le(n1,n2)
+	return n1==n2 or loop_lt(n1,n2)
+end
+
+--[[
+set the map to be redrawn on
+frame f, if redraw isn't already
+being delayed until a frame after
+f
+--]]
+function set_redraw(f)
+	if(building) return
+	f=f or frame
+	redraw =redraw and
+	(loop_lt(redraw,f) and
+	f or redraw)or f
+end
+
 --###-game turn management-####--
 
 --[[
@@ -524,9 +524,9 @@ function start_turn()
 		end
 	end
 	foreach_entity(function(e)
-		if e.turn == turn and e.take_turn then
+		if e.take_turn and loop_le(e.turn,turn) then
 			e:take_turn()
-			e.turn +=1
+			e.turn=loop_add(turn,1)
 		end
 	end)
 end
@@ -539,11 +539,10 @@ n: number of turns to repeat
 fn(): action to run
 --]]
 function turn_routine(t,n,fn)
-	local start=turn
 	turn_routines(cocreate(function()
-		while turn != (t+n)%1000 and
+		while turn != loop_add(t,n) and
 		n!=0 do
-			if(turn>=t or turn<start) fn() n-=1
+			if(loop_le(t,turn)) fn() n-=1
 			yield()
 		end
 	end))
@@ -574,7 +573,7 @@ start_msg,turn_msg,end_msg)
 		--log("effect on "..turn..", duration "..duration)
 		on_turn()
 	end)
-	turn_routine((turn+duration)%1000,1,function()
+	turn_routine(loop_add(turn,duration),1,function()
 		if(target.hp<=0)return
 		if(visible(target))name_msg(target,end_msg)
 		--log("effect over on "..turn)
@@ -676,13 +675,15 @@ function object:subclass(params)
 		end,
 		__lt=function(this,x)
 			return is_table(x)
+			and x.classes
 			and contains(x.classes,this)
 		end
 	}
 	setmetatable(subclass,subclass.c_metatable)
 	subclass.metatable=copy_all(self.metatable)
-	subclass.metatable.__index=subclass
-	subclass.classes = copy_all(self.classes)
+	subclass.metatable.__index,
+	subclass.classes =
+	subclass,copy_all(self.classes)
 	add(subclass.classes,subclass)
 	copy_all(params,subclass)
 	classtable[subclass.classname]=subclass
@@ -750,7 +751,7 @@ copy_all(
 		return self
 	end,
 	__len=function(self)
-		return self.length or 0
+		return self.length
 	end
 },queue.metatable)
 
@@ -793,8 +794,7 @@ end
 remove all values in the queue
 --]]
 function queue:clear()
-	self.values,
-	self.length = {},0
+	copy_all("values={},length=0",self)
 end
 
 --[[
@@ -926,7 +926,7 @@ copy_all({
 		return point(pt.x*x,pt.y*y)
 	end,
 	__div=function(pt,n)
-		return point(pt.x/n,pt.y/n)
+		return pt*(1/n)
 	end,
 	__unm=function(pt)
 		return point(pt)
@@ -952,12 +952,9 @@ d: matches button mappings
 --]]
 function point:move(d,n)
 	n = n or 1
+	local ax=d<2 and "x" or "y"
 	if(d%2==0)n*=-1
-	if d < 2 then
-		self.x+=n
-	else
-		self.y+=n
-	end
+	self[ax]+=n
 	return self
 end
 
@@ -968,8 +965,7 @@ to p2
 function point:dist(p2)
 	local ay,ax = (p2-self):get_xy()
 	ay,ax = abs(ay),abs(ax)
-	if(ay > ax) return ay + ax/2
-	return ax + ay/2
+	return max(ay,ax)+min(ay,ax)/2
 end
 
 --[[
@@ -1038,7 +1034,7 @@ end
 copy_all({
 	__call=function(self,a,b,c,d)
 		if(not a) return self"0,0,1,1"
-		if(is_string(a)) return self(str_to_list(a))
+		if(is_string(a)) return self(unpack(a))
 		if rectangle<a then
 			copy_all(a,self)
 		elseif point<a then
@@ -1068,10 +1064,14 @@ copy_all({
 		return r2
 	end,
 	__mul=function(r,n)
-		return rectangle(r.x,r.y,r.w*n,r.h*n)
+		local r2= -r
+		r2.w*=n
+		r2.h*=n
+		return r2
 	end,
 	__div=function(r,n)
-		return rectangle(r.x,r.y,r.w/n,r.h/n)
+		return r*(1/n)
+		--return rectangle(r.x,r.y,r.w/n,r.h/n)
 	end,
 	__eq=function(r1,r2)
 		return r1:p1()==r2:p1() and
@@ -1220,7 +1220,7 @@ function add_entity(e)
 	end
 	if(e.on_level_add)e:on_level_add()
 	if(creature<e)num_creatures+=1
-	if(screen > e.pos)redraw=frame
+	if(screen > e.pos)set_redraw()
 end
 
 --get the list of all entities
@@ -1252,7 +1252,7 @@ function remove_entity(e,moving)
 			del(lvl_entities[key],e)
 			if(#lvl_entities[key]==0)lvl_entities[key]=nil
 			if(creature<e)num_creatures-=1
-			if(screen > e.pos)redraw=frame
+			if(screen > e.pos)set_redraw()
 			if not moving then
 				if(e.on_level_remove)e:on_level_remove()
 				if(e!=you)e.pos=nil
@@ -1428,9 +1428,9 @@ dst: destination point
 function pathfind(src,dst,path_fn,range)
 	--log("finding path to "..#dst)
 	--pathtrace = {}
-	local closest,final
 	local paths,s_queue,
-	cval,ptimer,path_fn,range=
+	cval,ptimer,path_fn,range,
+	closest,final=
 	{
 		[#src] = {
 			steps = 0,
@@ -1610,7 +1610,8 @@ function entity:draw(dpos)
 	local weapon=self.equipped and self.equipped.weapon
 	if(weapon)weapon:draw(dpos+point(2,0))
 	if self.tempsprite then
-		redraw,self.tempsprite=frame+4,nil
+		set_redraw(loop_add(frame,8))
+		self.tempsprite=nil
 	end
 end
 
@@ -1642,7 +1643,7 @@ function item:init(params)
 	end
 	if self:class()<params then
 		copy_all(params,self)
-		self.holder,self.pos=nil,nil
+		self.holder,self.pos=nil
 	end
 end
 
@@ -1662,7 +1663,7 @@ function item:change_qty(qty)
 			del(self.holder.items,self)
 		end
 		remove_entity(self)
-		self.holder,self.pos=nil,nil
+		self.holder,self.pos=nil
 	end
 end
 
@@ -1674,16 +1675,16 @@ end
 food items restore hit points
 --]]
 meat= item:subclass
-"classname=meat,sprite=70,name=meat,color=14,hp_boost=5,flr_mult=10,use_msg=you feel much better.,use_sfx=5"
+"classname=meat,sprite=70,name=meat,color=14,hp_boost=5,flr_mult=3,use_msg=you feel much better.,use_sfx=5"
 function meat:use(c)
 	c+=self.hp_boost
 end
 
 apple=meat:subclass
-"classname=apple,sprite=71,name=apple,color=8,hp_boost=3,use_msg=you feel a bit better."
+"classname=apple,sprite=71,name=apple,color=8,hp_boost=3,use_msg=you feel a bit better.,flr_mult=-1"
 
 bread=meat:subclass
-"classname=bread,sprite=72,name=bread,color=8,hp_boost=6,flr_mult=10"
+"classname=bread,sprite=72,name=bread,color=8,hp_boost=6,flr_mult=3"
 
 --[[
 statues block off the tile they're
@@ -1774,7 +1775,7 @@ function color_coded_itm:use(c)
 	self:on_use(c)
 end
 
-potion=color_coded_itm:subclass"classname=potion,sprite=65,color=13,use_sfx=4,throw_sfx=7,flr_mult=10,names={1=healing,2=vision,3=poison,4=wisdom,5=sleep,6=lethe,7=water,8=juice,9=spectral,10=toughness,11=blindness},messages={1=you are healed,2=you see everything!,3=you feel sick,4=you feel more experienced,5=you fell asleep,6=where are you?,7=refreshing!,8=yum,9=you feel ghostly,10=nothing can hurt you now!,11=who turned out the lights?},colors={0=murky,1=viscous,2=fizzing,3=grassy,4=umber,5=ashen,6=smoking,7=milky,8=bloody,9=orange,10=glowing,11=lime,12=sky,13=reeking,14=fragrant,15=bland}"
+potion=color_coded_itm:subclass"classname=potion,sprite=65,color=13,use_sfx=4,throw_sfx=7,flr_mult=3,names={1=healing,2=vision,3=poison,4=wisdom,5=sleep,6=lethe,7=water,8=juice,9=spectral,10=toughness,11=blindness},messages={1=you are healed,2=you see everything!,3=you feel sick,4=you feel more experienced,5=you fell asleep,6=where are you?,7=refreshing!,8=yum,9=you feel ghostly,10=nothing can hurt you now!,11=who turned out the lights?},colors={0=murky,1=viscous,2=fizzing,3=grassy,4=umber,5=ashen,6=smoking,7=milky,8=bloody,9=orange,10=glowing,11=lime,12=sky,13=reeking,14=fragrant,15=bland}"
 potion:classgen()
 function potion:on_use(c)
 
@@ -1821,7 +1822,7 @@ function potion:on_use(c)
 		turn,rndint(20,10)
 		status_effect(c,duration,
 			function()
-				if(turn == (start+duration-3)%1000)name_msg(c," is fading back.")
+				if(turn ==loop_add(start,duration-3))name_msg(c," is fading back.")
 			end,
 			function()
 				c.spectral = nil
@@ -1898,7 +1899,7 @@ creature status, scrolls interact
 with the level map
 --]]
 scroll=color_coded_itm:subclass
-"classname=scroll,sprite=66,use_sfx=3,flr_mult=10,names={1=movement,2=wealth,3=summoning},messages={1=you are somewhere else,2=riches appear around you,3=you have company!},colors={0=filthy,1=denim,4=tattered,6=faded,8=ominous}"
+"classname=scroll,sprite=66,use_sfx=3,flr_mult=2,names={1=movement,2=wealth,3=summoning},messages={1=you are somewhere else,2=riches appear around you,3=you have company!},colors={0=filthy,1=denim,4=tattered,6=faded,8=ominous}"
 scroll:classgen()
 function scroll:on_use(c)
 	local type=self.type
@@ -1995,7 +1996,7 @@ accuracy boosts. also decent as
 a thrown weapon
 --]]
 knife = equipment:subclass
-	"classname=knife,sprite=68,name=knife,color=6,equip_slot=weapon,throw_sfx=8,dthrown=4,flr_mult=10,bonuses={hit_boost=5,dmin_boost=1,dmax_boost=2}"
+	"classname=knife,sprite=68,name=knife,color=6,equip_slot=weapon,throw_sfx=8,dthrown=4,flr_mult=5,bonuses={hit_boost=5,dmin_boost=1,dmax_boost=2}"
 
 --[[
 a strong weapon, but landing hits
@@ -2015,11 +2016,11 @@ very effective when thrown.
 	"classname=tomahawk,sprite=73,name=tomahawk,equip_slot=weapon,dthrown=8,flr_mult=1,bonuses={hit_boost=5,dmin_boost=1,dmax_boost=1}"
 
 	plate_armor = equipment:subclass
-	"classname=plate_armor,sprite=75,name=plate armor,equip_slot=armor,flr_mult=5,bonuses={ac=3}"
+	"classname=plate_armor,sprite=75,name=plate armor,equip_slot=armor,flr_mult=1,bonuses={ac=3}"
 	leather_armor = equipment:subclass
-	"classname=leather_armor,sprite=76,name=leather armor,equip_slot=armor,flr_mult=10,bonuses={ac=1}"
+	"classname=leather_armor,sprite=76,name=leather armor,equip_slot=armor,flr_mult=2,bonuses={ac=1}"
 	spiked_armor = equipment:subclass
-	"classname=spiked_armor,sprite=77,name=spiked armor,equip_slot=armor,flr_mult=10,bonuses={ac=2,dmin_boost=2}"
+	"classname=spiked_armor,sprite=77,name=spiked armor,equip_slot=armor,flr_mult=2,bonuses={ac=2,dmin_boost=2}"
 	warded_armor = equipment:subclass
 	"classname=warded_armor,sprite=78,name=warded armor,equip_slot=armor,flr_mult=1,bonuses={ac=6}"
 
@@ -2076,23 +2077,36 @@ each turn, creatures will either:
 --]]
 function creature:take_turn()
 	if not self.sleeping and self.pos then
-		local c_p,you_p,guard_pos = self.pos,
-		you.pos,self.guard_pos
-		if screen>c_p and
-		not gameover and
-		(self:can_see(you_p) or
-		c_p:dist(you_p)<3) then
-			local valid_path
-			local path=self.path
-			for i=1,path and #path or 0 do
-				if path:get(i):dist(you_p)
-				<=c_p:dist(you_p) then
-					valid_path=true
-				end
+		function restart_turn() self:take_turn() end
+		local cpos,target,guard_pos,
+		sight_rad,path,dest
+		= unpack(self,
+		"pos,target,guard_pos,sight_rad,path")
+		--if no target, try locking
+		--onto the player
+		if not target and
+		self.target_lost != turn
+		and self:can_see(you.pos) and
+		cpos:dist(you.pos)<sight_rad then
+			self.target=you
+			return restart_turn()
+		end
+		dest=target and target.pos
+		or guard_pos
+		if target and (target.hp <=0 or
+		not self:can_see(dest) and
+		cpos:dist(dest) > 2) then
+			self.target,self.target_lost=
+			nil,turn
+			return restart_turn()
+		end
+		if dest then
+			local tdist= cpos:dist(dest)
+			if not path or tdist<2 and
+			cpos:dist(path:get(1)) > tdist
+			and cpos!=dest then
+				self.path=pathfind(cpos,dest)
 			end
-			if(not valid_path)self.path=pathfind(c_p,you_p)
-		elseif guard_pos and c_p!=guard_pos then
-			self.path=pathfind(c_p,guard_pos)
 		end
 		local d
 		if(not(self.path or guard_pos))d=rndint(3,0)
@@ -2105,7 +2119,8 @@ they're in the way, but they won't
 hurt their own kind
 --]]
 function creature:would_attack(c2)
-	return not(self:class()<c2)
+	return target==c2 or
+	not(self:class()<c2)
 end
 
 --take an item from the level map
@@ -2215,19 +2230,21 @@ function creature:attack(c2,dmg,hitrate)
 	dmg or max(0,rndint(self.max_dmg+self.dmax_boost,self.min_dmg+self.dmin_boost)-c2.ac),
 	hitrate or self.hitrate+self.hit_boost
 	if(not self.tempsprite and screen>self.pos)self.tempsprite=self.sprite+2
-	local battle_msg = function(msg1,msg2)
+	local fx
+	function battle_msg(msg1,msg2)
 		name_msg(self,msg1..c2.name..msg2)
 	end
 	if rndint(100) > hitrate then
 		battle_msg(" missed ","!")
+		fx=1
 	else
+		c2.target=c1
+		fx=2
 		if dmg == 0 then
 			 battle_msg(" barely hits ",".")
-			 sfx(1)
 				return
 		else
 			battle_msg(" hit "," for "..dmg.." damage.")
-			sfx(2)
 			if dmg >= c2.hp then
 				if(self==you)kills+=1
 				self.exp+=c2.exp
@@ -2235,6 +2252,7 @@ function creature:attack(c2,dmg,hitrate)
 		end
 		c2 -= dmg
 	end
+	if(fx and visible(self))sfx(fx)
 end
 
 
@@ -2244,15 +2262,15 @@ rat = creature:subclass
 
 --slightly stronger, usually armed
 kobold=rat:subclass
-"classname=kobold,name=kobold,sprite=131,hp_max=8,exp=4,min_dmg=1,max_dmg=5,ac=1,item_table={torch=600,apple=200,knife=400,leather_armor=100}"
+"classname=kobold,name=kobold,sprite=131,hp_max=8,exp=4,min_dmg=1,max_dmg=5,ac=1,flr_mult=10,item_table={torch=600,apple=200,knife=400,leather_armor=100}"
 
 --vicious but innacurate
 mantid=rat:subclass
-"classname=mantid,name=mantid,sprite=147,hp_max=12,hitrate=60,min_dmg=4,max_dmg=8,exp=10,flr_mult=10,item_table={potion=800,meat=500}"
+"classname=mantid,name=mantid,sprite=147,hp_max=12,hitrate=60,min_dmg=6,max_dmg=9,exp=10,flr_mult=10,item_table={potion=800,meat=500}"
 
 --powerful guards
 watcher=mantid:subclass
-"classname=watcher,name=watcher,sight_rad=10,sprite=176,hp_max=20,hitrate=95,min_dmg=3,max_dmg=6,ac=3,exp=20,item_table={knife=500,sword=1000,bread=800,potion=400,spiked_armor=200}"
+"classname=watcher,name=watcher,sight_rad=10,sprite=176,hp_max=20,hitrate=95,min_dmg=3,max_dmg=6,ac=3,exp=20,flr_mult=2,item_table={knife=500,sword=1000,bread=800,potion=400,spiked_armor=200}"
 function watcher:init(params)
 	creature.init(self,params)
 	self.guard_pos=-self.pos
@@ -2263,7 +2281,7 @@ player = creature:subclass
 "classname=player,name=rogue,color=7,sprite=128,hp_max=10,hitrate=85,min_dmg=1,max_dmg=5,take_turn=always_nil,item_table={bread=1000,apple=800,meat=200,torch=1000,potion=500,scroll=500}"
 
 function player:move(d)
-	if(redraw>frame and not gameover) creature.move(self,d)
+	if(not turn_running) creature.move(self,d)
 	start_turn()
 end
 
@@ -2298,19 +2316,19 @@ wall = tile:subclass
 	"classname=wall,sprite=16,alt_sprite=17,color=6"
 
 dungeon_floor = floor:subclass
-"classname=dungeon_floor,item_table={knife=5,potion=5,scroll=5,mushroom=5,bread=8,plate_armor=1,leather_armor=0},spawn_table={rat=100,kobold=200,mantid=20}"
+"classname=dungeon_floor,item_table={knife=1,potion=2,scroll=2,mushroom=2,bread=1,plate_armor=0,leather_armor=-2},spawn_table={rat=100,kobold=200,mantid=0,watcher=-20}"
 
 dungeon_wall = wall:subclass
 	"classname=dungeon_wall"
 
 cave_floor=floor:subclass
-	"classname=cave_floor,sprite=3,alt_sprite=4,color=0,item_table={torch=20,apple=10,mushroom=50,potion=5,leather_armor=2},spawn_table={rat=400}"
+	"classname=cave_floor,sprite=3,alt_sprite=4,color=0,item_table={torch=20,apple=10,mushroom=50,potion=5,leather_armor=2},spawn_table={rat=400,mantid=-20,kobold=-2}"
 
 cave_wall=wall:subclass
 	"classname=cave_wall,sprite=0,alt_sprite=1,color=1"
 
 temple_floor=floor:subclass
-	"classname=temple_floor,sprite=35,alt_sprite=36,color=11,item_table={knife=40,tomahawk=20,sword=20,potion=50,scroll=50,ring=10,spiked_armor=5,warded_armor=2},spawn_table={kobold=900,mantid=500}"
+	"classname=temple_floor,sprite=35,alt_sprite=36,color=11,item_table={knife=20,tomahawk=0,sword=0,potion=30,scroll=30,ring=1,spiked_armor=0,warded_armor=-4},spawn_table={kobold=900,mantid=500,watcher=0}"
 
 throne=floor:subclass
 	"classname=throne,sprite=34,color=11"
@@ -2384,18 +2402,18 @@ end
 function build_level()
 	--load pre-designed level features
 	--from memory
-	local f_lists=str_to_table"addr=264e,len=630"
+	local f_lists=str_to_table"addr=264e,len=634"
 	local top_percent,range,ftimer=
 	100-#f_lists,4,timer()
 	ctrl,building,
 	build_percent,tiles_placed,
 	builder_walls,builder_floors =
-	loading_ctrl,str_to_list"true,0,0,cave_wall,cave_floor"
+	loading_ctrl,unpack"true,0,0,cave_wall,cave_floor"
 	coroutine(function()
 		--### main building loop  ###
 		while build_percent < top_percent do
 			ftimer()
-			local build_dungeon=build_percent>35
+			local build_dungeon=build_percent>55-lvl_floor
 			if build_dungeon then
 				builder_walls,builder_floors,range=
 				dungeon_wall,dungeon_floor,0
@@ -2422,7 +2440,7 @@ function build_level()
 				--calculate build progress
 				build_percent,build_path =
 				min(top_percent,flr(tiles_placed
-				/#lvl_area*(110+lvl_floor*10))),nil
+				/#lvl_area*(120+lvl_floor*10))),nil
 			else
 
 				--##### room building  ######
@@ -2439,7 +2457,7 @@ function build_level()
 						local expanded=rectangle(last_room)
 						while(rect_empty(expanded)
 						and lvl_area>expanded
-						and rnd(10)<8) do
+						and rnd(10)<7) do
 							last_room(expanded)
 							expanded:expand(1,d)
 						end
@@ -2474,7 +2492,7 @@ function build_level()
 				or rnd_pos(always_true),
 				function(p,t,dst)
 					if(t.fixed or not in_bounds(p)) return
-					if(p:dist(dst) < 4)return 0
+					--if(p:dist(dst) < 4)return 0
 					return (t.doorway and 40 or 0) +
 					((t and t.solid or door<t)
 					and (dungeon_building and
@@ -2487,9 +2505,10 @@ function build_level()
 		end
 		--remove unneeded doors
 		foreach_tile(function(p,t)
-			if door<t and
-			next_to(p,floor,true) !=2 then
-				set_tile(p,dungeon_wall())
+			if door<t and next_to(p,door,true)>0 then
+				set_tile(p,
+				next_to(p,wall,true)>1
+				and dungeon_floor() or dungeon_wall())
 			end
 		end)
 
@@ -2497,8 +2516,9 @@ function build_level()
 		for i=1,#f_lists do
 			local feature=f_lists[i]
 			if(is_string(feature))log(feature)
-			local attempts,build_count=
-			feature.try,feature.max or 1
+			local attempts,build_count,class=
+			feature.try,
+			feature.max
 			rnd_pos(function(p,t)
 				attempts-=1
 				--build_percent=(flr(build_percent).."."..(900-attempts))+0
@@ -2506,29 +2526,23 @@ function build_level()
 				ftimer()
 				for rot=0,3 do
 					function foreach_class(tbl,fn)
-						return foreach_pair(tbl,
-						function(pos,class)
-							return foreach(pos,
-							function (k)
+						return foreach(tbl,
+						function(k)
+							if tile<k or entity<k then
+								class=k
+							else
 								k=(#k==4 and rectangle or point)(unpack(k))
 								k=(k+p):rotate(p,rot)
 								return fn(k,class)
-							end)
+							end
 						end)
 					end
 					if not foreach_class(feature.val,
 					function(pos,class)
-						if(not in_bounds(pos))return true
-						if rectangle<pos then
-							if(not rect_empty(pos,class)) return true
-						else
-							if(not (class<get_tile(pos))) return true
-						end
-						--[[
 						return not in_bounds(pos) or
+						not (rectangle<pos)
+						and not (class<get_tile(pos)) or
 						pos.w and not rect_empty(pos,class)
-						or not (class<get_tile(pos))
-						--]]
 					end) then
 						foreach_class(feature.bld,
 						function(pos,class)
@@ -2551,8 +2565,8 @@ function build_level()
 		end
 		set_tile(you.pos,up_stair())
 		initial_items()
-		building,show_map,redraw,build_percent=
-		str_to_list"false,false,0,100"
+		building,show_map,build_percent=
+		unpack"false,false,100"
 		return
 	end)
 end
@@ -2581,7 +2595,7 @@ function map_cursor_init(action,bounds)
 	menu_close_all()
 	map_cursor,map_cursor_action,
 	map_cursor_bounds,
-	ctrl,redraw =
+	ctrl=
 	{
 		sprite=28,
 		pos=-you.pos,
@@ -2589,12 +2603,14 @@ function map_cursor_init(action,bounds)
 	},
 	action,
 	bounds or screen,
-	selection_ctrl,frame
+	selection_ctrl
+	set_redraw()
 end
 
 function map_cursor_remove()
-	ctrl,map_cursor,redraw =
-	default_ctrl,nil,frame
+	map_cursor=nil
+	set_redraw()
+	if(ctrl==selection_ctrl)ctrl=default_ctrl
 end
 
 --[[
@@ -2633,8 +2649,8 @@ end
 
 
 function menu_close()
-	active_menu,redraw =
-	-open_menus, frame
+	active_menu=-open_menus
+	set_redraw()
 	if(not active_menu and ctrl==menu_ctrl)ctrl=default_ctrl
 end
 
@@ -2655,6 +2671,7 @@ function menu:open()
 		active_menu = self
 		ctrl=menu_ctrl
 	end
+	set_redraw()
 end
 
 function menu:draw()
@@ -2775,7 +2792,6 @@ function inventory:update()
 						sfx(itm.throw_sfx)
 						start_turn()
 					end)
-					redraw=frame
 				end,screen)
 			end)
 			itm_menu:open()
@@ -2821,24 +2837,26 @@ end
 stats=menu()
 function stats:update()
 	self:clear()
-	foreach(
+	local titles,vals=
+	str_to_table
+	"armor class:damage:hit rate:,creatures killed:,most exp:,most kills:,deepest floor:",
 	{
-		"armor class:"..you.ac,
-		"damage:"..(you.min_dmg+you.dmin_boost).."-"..(you.max_dmg+you.dmax_boost),
-		"hit rate:"..(you.hitrate+you.hit_boost),
-		"creatures killed:"..kills,
-		"most exp:"..high_scores[1],
-		"most kills:"..high_scores[2],
-		"deepest floor:"..high_scores[3]
-	},
-	function(txt)
-		self:add(txt,always_nil)
-	end)
+		you.ac,
+		(you.min_dmg+you.dmin_boost).."-"..(you.max_dmg+you.dmax_boost),
+		(you.hitrate+you.hit_boost),
+		kills,
+		high_scores[1],
+		high_scores[2],
+		high_scores[3]
+	}
+	for i=1,#titles do
+		self:add(titles[i]..vals[i],always_nil)
+	end
 end
 
 
 function equip_menu:draw()
-	sspr(str_to_list"96,96,12,30,56,20")
+	sspr(unpack"96,96,12,30,56,20")
 	spr(28,58,13+9*self.index)
 	local i=0
 	foreach(equip_types,function(eqp)
@@ -2856,7 +2874,8 @@ function default_ctrl()
 		if(btnp(i)) you:move(i)
 	end
 	if(btnp"4") main_menu:open()
-	if(btnp"5") show_map,redraw=not show_map,frame
+	if(btnp"5") show_map=not show_map
+	set_redraw()
 end
 
 function selection_ctrl()
@@ -2867,7 +2886,7 @@ function selection_ctrl()
 			if map_cursor_bounds>pos and
 			in_bounds(pos) then
 				map_cursor.pos(pos)
-				redraw=frame
+				set_redraw()
 			end
 		end
 	end
@@ -2892,20 +2911,20 @@ function menu_ctrl()
 	if(btnp"3") active_menu.index %= #active_menu active_menu.index += 1
 	--0,right:select menu item
 	if btnp"4" or btnp"1" then
-		if(active_menu.index<=#active_menu) active_menu:get(active_menu.index):op() redraw=frame
+		if(active_menu.index<=#active_menu) active_menu:get(active_menu.index):op() set_redraw()
 	end
 	--x:close all menus
 	if(btnp"5")menu_close_all()
 end
 
 function no_ctrl()
-	if(btnp"5") show_map,redraw=not show_map,frame
+	if(btnp"5") show_map=not show_map
 	start_turn()
 	msg_update()
 end
 
 function loading_ctrl()
-	if(building or title and btnp() == 0) return
+	if(building) return
 	title=false
 	ctrl=default_ctrl
 end
@@ -2924,7 +2943,6 @@ function _init()
 	screen,
 	ctrl,
 	build_pos,
-	redraw,--0
 	show_map,--false
 	frame,--0
 	turn,--0
@@ -2940,7 +2958,7 @@ function _init()
 	rectangle()*16,
 	loading_ctrl,
 	rnd_pos(always_true),
-	str_to_list"0,false,0,0,0,7,1,true,true,0,{0,0,0},{weapon,armor,rings}"
+	unpack"false,0,0,0,7,1,true,true,0,{0,0,0},{weapon,armor,rings}"
 	you,draw_tbl,los_tbl =
 	player(build_pos),
 	point_mapping(mem_to_str(0x2000,0x284)),{}
@@ -2964,13 +2982,13 @@ function _update()
 	end
 	if turn_running then--finish turn
 		run_coroutines(turn_routines,true)
-		turn+=1
+		turn=loop_add(turn,1)
 		if you.hp <=0 then
 			gameover,reveal_all,ctrl=
 			true,true,no_ctrl
 		end
-		redraw,turn_running =
-		frame,false
+		turn_running =false
+		--set_redraw()
 		local exp=you.exp
 		you.hp_max,you.max_dmg,you.hitrate=
 		10+flr(exp/30),
@@ -2981,7 +2999,7 @@ function _update()
 			high_scores[i]=max(score[i],dget(i))
 			dset(i,high_scores[i])
 		end
-	elseif btnp()!=0 then
+	elseif btnp()!=0 and not redraw then
 		if not title and #msg>0 then
 			msg_update()
 		else
@@ -2992,13 +3010,12 @@ function _update()
 end
 
 function _draw()
-	frame+=1
-	frame%=1000
+	frame=loop_add(frame,1)
 	--### draw loading screen #######
 	if title or	building then
-		sspr(32*(flr((frame%18)/6)),str_to_list"96,32,32,0,0,128,128")
+		sspr(32*(flr((frame%18)/6)),unpack"96,32,32,0,0,128,128")
 		if(frame%9==0)sfx(0)
-		if(title) sspr(str_to_list"64,64,64,16,14,0,100,25")
+		if(title) sspr(unpack"64,64,64,16,14,0,100,25")
 		local txt = "press any key to start"
 		if(build_percent < 100) txt="descending:"..build_percent.."%"
 		local x1 = 66-#txt*2
@@ -3006,9 +3023,9 @@ function _draw()
 		print(txt,x1+1,121,10)
 		return
 	end
-	if redraw<frame then
+	if redraw and loop_le(redraw,frame) then
 		--######## draw level ##########
-		redraw=2000
+		redraw=nil
 		cls()
 		set_screen()
 		local keypt
@@ -3057,7 +3074,7 @@ function _draw()
 		draw_border"8,116,110,10"
 		print("hp:"..you.hp.."/"
 		..you.hp_max.." exp:"..you.exp
-		.." floor "..lvl_floor,str_to_list"15,119,10")
+		.." floor "..lvl_floor,unpack"15,119,10")
 
 		--#### draw minimap window ######
 		if show_map then
@@ -3077,14 +3094,14 @@ function _draw()
 			end)
 		end
 	end
-	if(run_coroutines(draw_routines,true))redraw=frame
+	if(run_coroutines(draw_routines,true))set_redraw()
 
 	--###### draw messages #########
 	draw_border"2,2,124,14"
 	if(not msg.curr	and #msg > 0)msg_update()
 	local last,curr = msg.last or "",msg.curr or ""
 	print(last,4,4,9)
-	if(#msg>0)spr(str_to_list"31,120,10")
+	if(#msg>0)spr(unpack"31,120,10")
 	print(curr,4,10,10)
 
 	--######## draw menus ##########
@@ -3092,8 +3109,9 @@ function _draw()
 	function(m)m:draw()end)
 	if(active_menu)active_menu:draw()
 	--print memory use for debug
-	--rectfill(str_to_list"0,121,40,138,1")
-	--print(stat(0)..":"..frame,str_to_list"1,122,8")
+	--draw_border"0,121,40,138"
+	--print(redraw,unpack"1,122,8")
+	--print(stat(0)..":"..frame,unpack"1,122,8")
 end
 
 __gfx__
@@ -3242,20 +3260,20 @@ __map__
 0807080608050804080326050108070706070506040603060226030807080608050804082606060707260107070806080508040703070207260203070806070506040503042603010807070606050504050304022607040807080607052608082601000807070606050504040303020201260608070826020507080607050704
 0603062606030807070607050704260303070706060505040426040407070606050526070208070806080507040703260008070806080508040803080208010826060208070706070507040603260707260207070806080508040703072606000807080607050704070307020601260105070806070507040603060206260601
 0807080607050704070306022600010708060705060405030402030102260801080708060805080408030802260108070806080508040803080208260401080707060705060405030502260204070806070506040603052605030807070606050604260708260803080708060805080426070608072604030807070606050504
-2604080708060805082601040708060705070406030502052604050708060705062602000807070606050504050304020301260307070806080507040726000001010202030304040505060607072c1f1d243509000026180c23350126210c17352c11171a1a1d352c2c0026002d2d2d260d170f352c1e1f0c141d352c2c0026
-002d2d2d2d262c1f1d243501050026180c23350126210c17352c0e0c21102811171a1a1d352c2c002600260726072d2d2d260d170f352c1f10181b171028220c1717352c2c012601260126022d262c012604260126022d262c042601260226012d262c042605260226012d262c012601260226012d262c012605260226012d26
-2c052601260126022d262c052604260126022d2d261f10181b17102811171a1a1d352c2c022603260326012d262c032602260126032d2d2611171a1a1d281b100f101e1f0c17352c2c0326032d2d2d2d262c1f1d243501000026180c23350426210c17352c11171a1a1d352c2c0026002d262c0026022d2d260f1a1a1d352c2c
-0026012d2d2d260d170f352c0f201912101a19281e100e1d101f280f1a1a1d352c2c0026012d2d2d262c1f1d243501000026180c23350426210c17352c0e0c211028220c1717352c2c0026012d262c0226012d2d260e0c21102811171a1a1d352c2c002600260326012d262c012600260126032d2d2d260d170f352c0e0c2110
-281e100e1d101f280f1a1a1d352c2c0126012d2d261f1a1d0e13352c2c0126012d2d2d2d262c1f1d243501000026180c23350126210c17352c211a140f352c2c002601260826052d2d26220c1717352c2c002600260826012d2d2d260d170f352c0f201912101a1928220c1717352c2c012600260626042d262c022600260326
-062d262c002601260826022d262c002601260726032d262c022600260426052d262c012600260726032d2d260f1a1a1d352c2c032600260226042d262c022601260426022d2d260f201912101a192811171a1a1d352c2c032601260226022d262c0126022d262c0626012d262c0326042d2d261f1a1d0e13352c2c0226002d26
-2c0526002d2d261d141912352c2c0626012d2d261e1f0c1f2010352c2c0326042d2d26220c1f0e13101d352c2c0126022d2d2d2d262c1f1d243501000026180c23350126210c17352c220c1717352c2c0326012d2d2611171a1a1d352c2c0326002d2d26211a140f352c2c002602260726062d2d2d260d170f352c1f10181b17
-1028220c1717352c2c012602260526062d262c002603260726032d2d261f10181b17102811171a1a1d352c2c022603260326022d262c022606260326012d262c032601260126062d2d261f10181b1710280f1a1a1d352c2c0326022d262c032604260126022d2d2611171a1a1d281b100f101e1f0c17352c2c0126042d262c05
-26042d2d261f131d1a1910352c2c0326042d2d261e1f0c1f2010352c2c0126042d262c0526042d2d26220c1f0e13101d352c2c0326042d2d2d2d262c1f1d243502000026180c23350126210c17352c211a140f352c2c002602260526052d2d260e0c211028220c1717352c2c002601260526012d2d260e0c21102811171a1a1d
-352c2c002600260526012d2d2d260d170f352c0f201912101a1928220c1717352c2c002601260526062d2d260e0c211028220c1717352c2c002601260526032d2d260e0c21102811171a1a1d352c2c012603260326012d262c012601260126032d2d2611171a1a1d281b100f101e1f0c17352c2c0126012d262c0326012d2d26
-0f1a1a1d352c2c022604260126022d2d260f201912101a192811171a1a1d352c2c012605260326012d2d261e1f0c1f2010352c2c0126012d262c0326012d2d261f1a180c130c2216352c2c0326052d2d26161a0d1a170f352c2c0126052d2d2d2d262c1f1d243502000026180c23350226210c17352c211a140f352c2c002602
-260526012d2d260e0c211028220c1717352c2c002601260526012d2d260e0c21102811171a1a1d352c2c002600260526012d2d2d260d170f352c0e0c211028220c1717352c2c002601260526022d2d2611171a1a1d281b100f101e1f0c17352c2c0126012d262c0326012d2d261e1f0c1f2010352c2c0126012d262c0326012d
-2d2d2d262c1f1d243501000026180c23350226210c17352c11171a1a1d352c2c002600260326032d2d2d260d170f352c1f10181b17102811171a1a1d352c2c002600260326032d2d2611171a1a1d281b100f101e1f0c17352c2c002601260326012d262c012600260126032d2d261e1f0c1f2010352c2c0126012d2d2d2d0c17
-352c11171a1a1d352c2c002600260326032d2d2d260d170f352c1f10181b17102811171a1a1d352c2c002600260326032d2d2611171a1a1d281b100f101e1f0c17352c2c002601260326012d262c012600260126032d2d1e1f0c1f2010352c2c0126012d2d2d2d2811171a1a1d26032703260327030624060108070806070507
+2604080708060805082601040708060705070406030502052604050708060705062602000807070606050504050304020301260307070806080507040726000001010202030304040505060607072c1f1d243509000026180c23350126210c17352c11171a1a1d262c0026002d2d260d170f352c1e1f0c141d262c0026002d2d
+2d262c1f1d243501050026180c23350126210c17352c0e0c21102811171a1a1d262c002600260726072d2d260d170f352c1f10181b171028220c1717262c012601260126022d262c012604260126022d262c042601260226012d262c042605260226012d262c012601260226012d262c012605260226012d262c052601260126
+022d262c052604260126022d261f10181b17102811171a1a1d262c022603260326012d262c032602260126032d2611171a1a1d281b100f101e1f0c17262c0326032d261f10181b171028220c1717262c012601260126022d262c012604260126022d262c042601260226012d262c042605260226012d262c012601260226012d
+262c012605260226012d262c052601260126022d262c052604260126022d261f10181b17102811171a1a1d262c0326032d2d2d262c1f1d243501000026180c23350426210c17352c11171a1a1d262c0026002d262c0026022d260f1a1a1d262c0026012d2d260d170f352c0f201912101a19281e100e1d101f280f1a1a1d262c
+0026012d2d2d262c1f1d243501000026180c23350426210c17352c0e0c211028220c1717262c0026012d262c0226012d260e0c21102811171a1a1d262c002600260326012d262c012600260126032d2d260d170f352c0e0c2110281e100e1d101f280f1a1a1d262c0126012d261f1a1d0e13262c0126012d2d2d262c1f1d2435
+01000026180c23350126210c17352c211a140f262c002601260826052d26220c1717262c002600260826012d2d260d170f352c0f201912101a1928220c1717262c012600260626042d262c022600260326062d262c002601260826022d262c002601260726032d262c022600260426052d262c012600260726032d260f1a1a1d
+262c032600260226042d262c022601260426022d260f201912101a192811171a1a1d262c032601260226022d262c0126022d262c0626012d262c0326042d261f1a1d0e13262c0226002d262c0526002d261d141912262c0626012d261e1f0c1f2010262c0326042d26220c1f0e13101d262c0126022d2d2d262c1f1d24350100
+0026180c23350126210c17352c220c1717262c0326012d2611171a1a1d262c0326002d26211a140f262c002602260726062d2d260d170f352c1f10181b171028220c1717262c012602260526062d262c002603260726032d261f10181b17102811171a1a1d262c022603260326022d262c022606260326012d262c0326012601
+26062d261f10181b1710280f1a1a1d262c0326022d262c032604260126022d2611171a1a1d281b100f101e1f0c17262c0126042d262c0526042d261f131d1a1910262c0326042d261e1f0c1f2010262c0126042d262c0526042d26220c1f0e13101d262c0326042d2d2d262c1f1d243502000026180c23350126210c17352c21
+1a140f262c002602260526052d260e0c211028220c1717262c002601260526012d260e0c21102811171a1a1d262c002600260526012d2d260d170f352c0f201912101a1928220c1717262c002601260526062d260e0c211028220c1717262c002601260526032d260e0c21102811171a1a1d262c012603260326012d262c0126
+01260126032d2611171a1a1d281b100f101e1f0c17262c0126012d262c0326012d260f1a1a1d262c022604260126022d260f201912101a192811171a1a1d262c012605260326012d261e1f0c1f2010262c0126012d262c0326012d261f1a180c130c2216262c0326052d26161a0d1a170f262c0126052d2d2d262c1f1d243502
+000026180c23350226210c17352c211a140f262c002602260526012d260e0c211028220c1717262c002601260526012d260e0c21102811171a1a1d262c002600260526012d2d260d170f352c0e0c211028220c1717262c002601260526022d2611171a1a1d281b100f101e1f0c17262c0126012d262c0326012d261e1f0c1f20
+10262c0126012d262c0326012d2d2d262c1f1d243501000026180c23350226210c17352c11171a1a1d262c002600260326032d2d260d170f352c1f10181b17102811171a1a1d262c002600260326032d2611171a1a1d281b100f101e1f0c17262c002601260326012d262c012600260126032d261e1f0c1f2010262c0126012d
+2d2d11171a1a1d352c2c002600260326032d2d2d260d170f352c1f10181b17102811171a1a1d352c2c002600260326032d2d2611171a1a1d281b100f101e1f0c17352c2c002601260326012d262c012600260126032d2d1e1f0c1f2010352c2c0126012d2d2d2d2811171a1a1d26032703260327030624060108070806070507
 04070306022400010708060705060405030402030102240f0f09090a0a0b0b0c0c0d0d0e0e24080108070806080508040803080224010e07080609050a040b030c020d24060f0809080a070b070c070d060e240108070806080508040803080208240d0c09080a090b0a0c0b240e0909080a080b080c090d09240d0d09090a0a
 0b0b0c0c240d0509080a070b060c0624050e0809070a070b060c060d2404010807070607050604050305022402040708060705060406030524020a0708060905090409030a24050308070706060506042407082408030807080608050804240e0a09080a090b090c090d0a240a0e0809090a090b090c0a0d2407060807240403
 080707060605050424040807080608050824010407080607050704060305020524030a070806090509040924060a070924080a080924090f0809080a080b090c090d090e240d0609080a070b070c0724030b07080609050a040a2404050708060705062402000807070606050504050304020301240a09090824040e0809070a
@@ -3392,4 +3410,3 @@ __music__
 00 01004344
 00 41424344
 00 41424344
-
