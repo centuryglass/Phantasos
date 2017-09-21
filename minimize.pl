@@ -27,7 +27,7 @@ while($file =~ /^(.*__lua__\n\s*)(--.*)/s){
   my $header=$1;
   my $fdata=$2;
 
-  if($fdata =~ /^(--\[\[.*?\]\]--)(.*)/s){
+  if($fdata =~ /^(--\[\[.*?--\]\])(.*)/s){
     $openingComment=$openingComment.$1."\n";
     $fdata=$2;
   }
@@ -62,6 +62,7 @@ my @reserved = (
 "assert",
 "atan2",
 "band",
+"bld",
 "bnot",
 "bor",
 "break",
@@ -153,9 +154,11 @@ my @reserved = (
 "time",
 "trace",
 "true",
+"try",
 "type",
 "unm",
 "until",
+"val",
 "while",
 "yield"
 );

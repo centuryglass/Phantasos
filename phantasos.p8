@@ -1,14 +1,18 @@
 pico-8 cartridge // http://www.pico-8.com
 version 10
 __lua__
---phantasos v.0.6
+--phantasos v.0.7
+--copyright anthony brown 2017
 --[[
-copyright anthony brown 2017
 this work is licensed under a
 creative commons attribution 4.0
 international license
 https://creativecommons.org/
 licenses/by/4.0/
+
+https://github.com/centuryglass/Phantasos
+has the uncompressed code, if
+you're interested.
 --]]
 
 --[[
@@ -2927,6 +2931,7 @@ function loading_ctrl()
 	if(building) return
 	title=false
 	ctrl=default_ctrl
+	set_redraw()
 end
 
 --keep the draw area centered

@@ -20,7 +20,7 @@ classtable=0,{}
 filename of the game cartridge
 being developed
 --]]
-cart_file="phantasos.p8"
+cart_file="phantasos_min.p8"
 
 floor_sprites="0-8,16-24,32-40"
 entity_sprites=
