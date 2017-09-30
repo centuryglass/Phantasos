@@ -10,7 +10,7 @@ international license
 https://creativecommons.org/
 licenses/by/4.0/
 
-https://github.com/centuryglass/Phantasos
+https://github.com/centuryglass/phantasos
 has the uncompressed code, if
 you're interested.
 --]]
@@ -62,7 +62,6 @@ end
 
 --[[
 load a string from memory
-
 addr: memory address
 len: length in memory
 --]]
@@ -186,8 +185,7 @@ end
 
 --[[
 convert hex strings to number data
-hexstr: a hex string, without
-	the '0x' prefix
+hexstr: omit the '0x' prefix
 --]]
 function hexstr_to_num(hexstr)
 	return ("0x"..hexstr)+0
@@ -195,15 +193,14 @@ end
 
 --[[
 convert a string into a table
-of point lists. for each point
-list, also add the reflections
-of the list over x=8,y=8,
-and y=8-x
+of point lists. also add the
+reflections of each list over
+x=8,y=8, and y=8-x
 --]]
 function point_mapping(str)
 	local pt_tbl,mapped,offset,
 	tfms=
-	{},{},point(8,8),
+	{},{},point"x=8,y=8",
 	str_to_table"{1,1},{-1,1},{1,-1},{-1,-1}"
 	str=str_to_table(str)
 	foreach(str,function(hex)
@@ -241,7 +238,6 @@ end
 --[[
 create, store, and start a
 coroutine that runs fn()
-fn: any function taking no params
 --]]
 function coroutine(fn)
 	--fn()
@@ -277,17 +273,13 @@ end
 --[[
 #### general utilty functions ##
 --]]
---type detection, saves tokens
 function is_string(var)
 	return type(var) == "string"
 end
 function is_table(var)
 	return type(var) == "table"
 end
---[[
-returns all items in array t, in
-order
---]]
+
 function unpack(t,index)
 	t,index=str_to_table(t),
 	str_to_table(index) or 1
@@ -307,10 +299,6 @@ end
 --[[
 run fn(v,k) for each key:value
 pair in tbl.
-
-i'm using v,k instead of k,v
-because i often don't need the
-key, but i always need the value
 
 stop early and return true if
 fn returns true
@@ -347,8 +335,6 @@ solution: call
 	long_fun(argsort({y,z},uvwx()))
 	and argsort will reorder the
 	parameters appropriately.
-	it's kind of sloppy, but i wont
-	turn down the extra tokens
 --]]
 function argsort(vars,a,b,c,d,e,f)
 	--if this fails, add more params
@@ -363,9 +349,6 @@ function argsort(vars,a,b,c,d,e,f)
 end
 
 
---[[
-make rounding errors go away
---]]
 function round(val)
 	return flr(val)+
 	(val%1>0.5 and 1 or 0)
@@ -380,7 +363,7 @@ src: a table, or a string that
 	can be converted into a table
 [dst]: a destination table. if
 	omitted, create a new table
-return: dst or the new table
+return: dst
 --]]
 function copy_all(src,dst)
 	dst,src = dst or {},
@@ -408,7 +391,6 @@ end
 
 --[[
 random integer function
-
 rmax: maximum value,inclusive
 [rmin]: minimum value, inclusive,
 defaults to 1
@@ -502,14 +484,15 @@ end
 --###-game turn management-####--
 
 --[[
-start a new game turn, generating
-creatures if necessary. does
+start a new game turn. does
 nothing if a turn is still running
 
 return:true if a new turn was
 started.
 --]]
 function start_turn()
+	if(you.fast==1)you.fast=2 return
+	if(you.fast==2)you.fast=1
 	if(turn_running)return
 	turn_running = true
 	if num_creatures < max_creatures
@@ -671,7 +654,7 @@ class
 --]]
 function object:subclass(params)
 	local subclass = {}
-	if(#params == 2)params = mem_to_str(params[1],params[2])
+	--if(#params == 2)params = mem_to_str(params[1],params[2])
  subclass.c_metatable={
  	__index=self,
 		__call=function(this,params)
@@ -980,7 +963,7 @@ by 90 degrees
 --]]
 function point:rotate(pivot,turns_cw)
 	if(turns_cw == 0)return -self
-	pivot,turns_cw=pivot or point(0,0),
+	pivot,turns_cw=pivot or point"x=0,y=0",
 	turns_cw or 1
 	local rot=self-pivot
 	rot(-rot.y,rot.x)
@@ -1167,12 +1150,12 @@ function rectangle:xy1xy2()
 	return self.x,self.y,
 	self:p2():get_xy()
 end
-
+--[[
 function rectangle:to_string()
 	return #self:p1()
 	..","..#self:p2()
 end
-
+--]]
 
 --[[
 ##########- level map -##########
@@ -1209,7 +1192,7 @@ end
 --set the tile at point p to t
 function set_tile(p,t)
 	if lvl_area>p then
-		t.bright=get_tile(p).bright
+		t.lights=get_tile(p).lights
 		lvl[#p] = t
 	end
 end
@@ -1377,7 +1360,7 @@ all positions in a 16x16 grid
 		block the path
 --]]
 function blockpt(p1,p2,cblock)
-	local offset = point(8,8)-p1
+	local offset = point"x=8,y=8"-p1
 	local rel = p2+offset
 	if(not los_tbl[#rel])return p1
 	for blocker in all(los_tbl[#rel]) do
@@ -1447,7 +1430,8 @@ function pathfind(src,dst,path_fn,range)
 	end,range or 0
 	s_queue(#src,0)
 	--pathtrace[#dst]=10--yellow=destination attempt
-	while #s_queue > 0 do
+	while #s_queue > 0
+	and stat(0)<1000 do
 		ptimer()
 		local srckey = -s_queue
 		if point(srckey):dist(dst)
@@ -1572,7 +1556,7 @@ represents things with a location
 within a level map
 --]]
 entity = object:subclass
-	"classname=entity,name=entity,color=8,sprite=93,flr_mult=0"
+	"classname=entity,name=entity,sprite=93,flr_mult=0"
 
 --[[
 if given an initial position,
@@ -1595,7 +1579,7 @@ function entity:can_see(pos)
 	local t,p = get_tile(pos),self.pos
 	return pos==p or
 	(p:dist(pos)<=self.sight_rad
-	or t.bright)and los(p,pos)
+	or t.lights)and los(p,pos)
 end
 
 --[[
@@ -1612,9 +1596,9 @@ function entity:draw(dpos)
 	spr(self.tempsprite or self.sprite,dpos:get_xy())
 	pal()
 	local weapon=self.equipped and self.equipped.weapon
-	if(weapon)weapon:draw(dpos+point(2,0))
+	if(weapon)weapon:draw(dpos+point"x=2,y=0")
 	if self.tempsprite then
-		set_redraw(loop_add(frame,8))
+		set_redraw(loop_add(frame,4))
 		self.tempsprite=nil
 	end
 end
@@ -1679,16 +1663,16 @@ end
 food items restore hit points
 --]]
 meat= item:subclass
-"classname=meat,sprite=70,name=meat,color=14,hp_boost=5,flr_mult=3,use_msg=you feel much better.,use_sfx=5"
+"classname=meat,sprite=70,name=meat,hp_boost=5,flr_mult=3,use_msg=you feel much better.,use_sfx=5"
 function meat:use(c)
 	c+=self.hp_boost
 end
 
 apple=meat:subclass
-"classname=apple,sprite=71,name=apple,color=8,hp_boost=3,use_msg=you feel a bit better.,flr_mult=-1"
+"classname=apple,sprite=71,name=apple,hp_boost=3,use_msg=you feel a bit better.,flr_mult=-1"
 
 bread=meat:subclass
-"classname=bread,sprite=72,name=bread,color=8,hp_boost=6,flr_mult=3"
+"classname=bread,sprite=72,name=bread,hp_boost=6,flr_mult=3"
 
 --[[
 statues block off the tile they're
@@ -1697,7 +1681,7 @@ and thrown. interesting tactical
 opportunities
 --]]
 statue=item:subclass
-"classname=statue,sprite=74,name=statue,color=10"
+"classname=statue,sprite=74,name=statue"
 function statue:on_level_add()
 	get_tile(self.pos).solid=true
 end
@@ -1717,24 +1701,19 @@ color_coded_itm=item:subclass
 "classname=color_coded_itm"
 
 function color_coded_itm:classgen()
-	self.num_types,self.types=
-	#self.names,{}
 	--randomize color/function assignment
-	local types= rnd_queue()
+	local colors = rnd_queue()
+	assert(self.colors)
 	foreach_pair(self.colors,
-	function(v,k)
-		types{
-			name= v .." "..self.classname,
-			color=k
+	function(name,cnum)
+		colors{
+			name=name.." "..self.classname,
+			p_swap=cnum
 		}
 	end)
-	for i=1,self.num_types do
-		local type = -types
-		type.real_name,
-		type.use_msg,
-		self.types[i]=
-		self.names[i].." "..self.classname,
-		self.messages[i],type
+	for i=1,#self.types do
+		local c = -colors
+		copy_all(c,self.types[i])
 	end
 end
 
@@ -1744,11 +1723,8 @@ end
 	--]]
 function color_coded_itm:init(params)
 	item.init(self,params)
-	if not self.type then
-		self.type = rndint(self.num_types)
-		local type = self.types[self.type]
-		self.name,self.use_msg,self.p_swap
-		=type.name,type.use_msg,type.color
+	if not self.ti then
+		copy_all(self.types[rndint(#self.types)],self)
 	end
 end
 
@@ -1757,16 +1733,15 @@ creature c uses this item. if the
 player sees this,reveal its identity
 --]]
 function color_coded_itm:use(c)
-	local types = self:class().types
-	local type = types[self.type]
-	local name,real_name = self.name,
-	type.real_name
+	local ti,name,real_name,cname=
+	unpack(self,"ti,name,r_name,classname")
+	real_name=real_name.." "..cname
 	if visible(c) and name !=
 	real_name then
 		function update_names(i)
 			if(i.name==name)i.name=real_name
 		end
-		update_names(type)
+		update_names(self.types[ti])
 		foreach_entity(function(e)
 			update_names(e)
 			if e.items then
@@ -1779,36 +1754,27 @@ function color_coded_itm:use(c)
 	self:on_use(c)
 end
 
-potion=color_coded_itm:subclass"classname=potion,sprite=65,color=13,use_sfx=4,throw_sfx=7,flr_mult=3,names={1=healing,2=vision,3=poison,4=wisdom,5=sleep,6=lethe,7=water,8=juice,9=spectral,10=toughness,11=blindness},messages={1=you are healed,2=you see everything!,3=you feel sick,4=you feel more experienced,5=you fell asleep,6=where are you?,7=refreshing!,8=yum,9=you feel ghostly,10=nothing can hurt you now!,11=who turned out the lights?},colors={0=murky,1=viscous,2=fizzing,3=grassy,4=umber,5=ashen,6=smoking,7=milky,8=bloody,9=orange,10=glowing,11=lime,12=sky,13=reeking,14=fragrant,15=bland}"
+potion=color_coded_itm:subclass
+"flr_mult=3,sprite=65,throw_sfx=7,use_sfx=4,classname=potion,types={{r_name=healing,use_msg=you are healed,ti=1},{r_name=poison,use_msg=you feel sick,ti=3},{r_name=wisdom,use_msg=you feel more experienced,ti=4},{r_name=sleep,use_msg=you fell asleep,ti=5},{r_name=lethe,use_msg=where are you?,ti=6},{r_name=water,use_msg=refreshing!,ti=7},{r_name=juice,use_msg=yum,ti=8},{r_name=spectral,use_msg=you feel ghostly,ti=9},{r_name=toughness,use_msg=nothing can hurt you now!,ti=10},{r_name=blindness,use_msg=who turned out the lights?,ti=11},{r_name=speed,use_msg=the world slows down.,ti=12}},colors={1=viscous,2=fizzing,3=grassy,4=umber,5=ashen,6=smoking,7=milky,8=bloody,9=orange,10=glowing,11=lime,12=sky,13=reeking,14=fragrant,15=bland,0=murky}"
 potion:classgen()
 function potion:on_use(c)
 
-	local type,is_player,n_turns=
-	self.type,c==you,rndint(10,4)
+	local ti,is_player,n_turns=
+	self.ti,c==you,rndint(10,4)
 	--healing: restore max hp
-	if(type == 1)c.hp=c.hp_max
-	--vision: see everything for
-	--a few turns
-	if type == 2 then
-		if(is_player)reveal_all=true
-		c.can_see=always_true
-		status_effect(c,rndint(5,2),
-		nil,function() c.can_see=nil reveal_all=false end,
-		"'s perception expands.",
-		nil,"'s vision returns to normal")
-	end
+	if(ti == 1)c.hp=c.hp_max
 	--poison: take damage for several
 	--turns
-	if(type == 3)poison(c)
+	if(ti == 3)poison(c)
 	--experience boost
-	if(type == 4)c.exp=flr((c.exp+10)*1.5)
+	if(ti == 4)c.exp=flr((c.exp+10)*1.5)
 	--sleep: prevents action and
 	--restore 1 hp per turn
-	if(type == 5)sleep(c)
+	if(ti == 5)sleep(c)
 	--amnesia: forget the level layout
 	--todo: make this do something to
 	--non-player creatures
-	if type == 6 then
+	if ti == 6 then
 		if(not is_player) return
 		foreach_tile(function(p,t)
 			t.seen = nil
@@ -1816,11 +1782,11 @@ function potion:on_use(c)
 	end
 	--7:water. does nothing
 	--juice: slight hp restoration
-	if(type == 8)c+=2
+	if(ti == 8)c+=2
 	--spectral: walk through solid
 	--objects. take care not to be
 	--in a wall when it wears off
-	if type == 9 then
+	if ti == 9 then
 		c.spectral = true
 		local start,duration =
 		turn,rndint(20,10)
@@ -1840,18 +1806,24 @@ function potion:on_use(c)
 	end
 	--invincibility: block attack
 	--damage for a few turns
-	if type == 10 then
+	if ti == 10 then
 		c.ac+=999
 		status_effect(c,rndint(7,3),
 		nil,function() c.ac-=999 end,
 		" is invincible!",nil," looks vulnerable.")
 	end
 	--blindness
-	if type == 11 then
+	if ti == 11 then
 		c.can_see=always_nil
 		status_effect(c,rndint(12,8),
 		nil,function() c.can_see=nil end,
 		" is blind!",nil," can see again.")
+	end
+	if ti == 12 then
+		c.fast=1
+		status_effect(c,rndint(20,4),
+		nil,function() c.fast=nil end,
+		" speeds up.",nil," slows down.")
 	end
 end
 
@@ -1880,18 +1852,19 @@ end
 mushrooms mostly have minor effects,
 usually bad. beware the deathcap.
 --]]
+
 mushroom=color_coded_itm:subclass
-"classname=mushroom,sprite=67,use_sfx=5,color=4,names={1=tasty,2=disgusting,3=deathcap,4=magic},messages={1=that was delicious,2=that was awful,3=you feel deathly ill,4=look at the colors!},colors={1=speckled,3=moldy,6=chrome,8=bleeding,14=lovely,15=fleshy}"
+"use_sfx=5,classname=mushroom,sprite=67,types={{r_name=tasty,use_msg=that was delicious,ti=1},{r_name=disgusting,use_msg=that was awful,ti=2},{r_name=deathcap,use_msg=you feel deathly ill,ti=3},{r_name=magic,use_msg=look at the colors!,ti=4}},colors={0=speckled,14=lovely,8=bleeding,6=chrome,3=moldy,15=fleshy}"
 mushroom:classgen()
 function mushroom:on_use(c)
-	local type=self.type
-	if(type == 1)c+=10
-	if(type == 2)c-=1
-	if(type == 3)c.hp=1
-	if type == 4 then
-		c.hallucinating = true
+	local ti=self.ti
+	if(ti == 1)c+=10
+	if(ti == 2)c-=1
+	if(ti == 3)c.hp=1
+	if ti == 4 then
+		c.confused = true
 		status_effect(c,rndint(15,4),
-		nil,function() c.hallucinating=false end,
+		nil,function() c.confused=false end,
 		" looks unsteady.",nil,"'s vision clears.")
 	end
 end
@@ -1903,14 +1876,15 @@ creature status, scrolls interact
 with the level map
 --]]
 scroll=color_coded_itm:subclass
-"classname=scroll,sprite=66,use_sfx=3,flr_mult=2,names={1=movement,2=wealth,3=summoning},messages={1=you are somewhere else,2=riches appear around you,3=you have company!},colors={0=filthy,1=denim,4=tattered,6=faded,8=ominous}"
+"use_sfx=3,flr_mult=2,classname=scroll,sprite=66,types={{r_name=movement,use_msg=you are somewhere else,ti=1},{r_name=wealth,use_msg=riches appear around you,ti=2},{r_name=summoning,use_msg=you have company!,ti=3},{r_name=magic mapping,use_msg=you know your surroundings.,ti=4}},colors={1=denim,0=filthy,4=tattered,8=ominous,6=faded}"
+
 scroll:classgen()
 function scroll:on_use(c)
-	local type=self.type
+	local ti=self.ti
 	local gentable
-	if(type == 1)move_entity(c,rnd_pos(nil,-1))
-	if(type == 2) gentable="item_table"
-	if(type == 3) gentable="spawn_table"
+	if(ti == 1)move_entity(c,rnd_pos(nil,-1))
+	if(ti == 2) gentable="item_table"
+	if(ti == 3) gentable="spawn_table"
 	if gentable then
 		foreach_adj(c.pos,function(p,t)
 			while not prob_tbl(t[gentable],
@@ -1922,13 +1896,18 @@ function scroll:on_use(c)
 			end) do end
 		end)
 	end
+	if ti == 4 then
+		foreach_tile(function(p,t)
+			t.seen=true
+		end)
+	end
 end
 
 equipment=item:subclass"classname=equipment,bonuses={hitbonus=1}"
 
 function equipment:equip(c)
 	local equip_slot,itm=self.equip_slot,
-	c:drop(self,1,point(99,99))
+	c:drop(self,1,point"x=99,y=99")
 	local equipped=c.equipped[equip_slot]
 	if(equipped)equipped:remove()
 	foreach_pair(self.bonuses,
@@ -1952,47 +1931,42 @@ function equipment:remove()
 end
 
 --[[
-tiles lit by torches (marked as
-bright) are visible up to 16
-tiles away as long as nothing
-blocks them
+tiles lit by torches are
+visible up to 16 tiles away as
+long as nothing blocks them
 
 when equipped, torches serve as
 a weak weapon and extend sight
 radius
 --]]
 torch = equipment:subclass
-	"classname=torch,sprite=64,name=torch,sight_rad=4,color=10,equip_slot=weapon,bonuses={sight_rad=1,dmin_boost=1,dmax_boost=1}"
+	"classname=torch,sprite=64,name=torch,sight_rad=4,equip_slot=weapon,bonuses={sight_rad=1,dmin_boost=1,dmax_boost=1}"
 
 	--[[
 	run fn(p,t) for each map tile
 	lit by the torch
 	--]]
-	function torch:foreach_lit(fn)
-		local light_area = rectangle(self.pos)
-		:expand(self.sight_rad)
-		foreach_tile(function(p,t)
-			if p:dist(self.pos) < self.sight_rad
-			and los(self.pos,p) then
-				fn(p,t)
-			end
-		end,light_area)
-	end
+
 function torch:on_level_add()
-	self:foreach_lit(
-	function(p,t)
-		if not (void<t) then
-			t.bright = t.bright
-			and t.bright+1 or 1
+	self.light_area = rectangle(self.pos)
+	:expand(self.sight_rad)
+	foreach_tile(function(p,t)
+		if p:dist(self.pos) < self.sight_rad
+		and los(self.pos,p)
+		and not (void<t) then
+			t.lights = t.lights or {}
+			add(self,t.lights)
 		end
-	end)
+	end,self.light_area)
 end
+
 function torch:on_level_remove()
-	self:foreach_lit(
-	function(p,t)
-		if(t.bright)t.bright-=1
-		if(t.bright==0)t.bright=nil
-	end)
+	foreach_tile(function(p,t)
+		if t.lights then
+			del(t.lights,self)
+			if(#t.lights==0)t.lights=nil
+		end
+	end,self.light_area)
 end
 --[[
 basic weapon, mild damage and
@@ -2000,7 +1974,7 @@ accuracy boosts. also decent as
 a thrown weapon
 --]]
 knife = equipment:subclass
-	"classname=knife,sprite=68,name=knife,color=6,equip_slot=weapon,throw_sfx=8,dthrown=4,flr_mult=5,bonuses={hit_boost=5,dmin_boost=1,dmax_boost=2}"
+	"classname=knife,sprite=68,name=knife,equip_slot=weapon,throw_sfx=8,dthrown=4,flr_mult=5,bonuses={hit_boost=5,dmin_boost=1,dmax_boost=2}"
 
 --[[
 a strong weapon, but landing hits
@@ -2009,7 +1983,7 @@ not meant as a thrown weapon but
 better than throwing apples
 --]]
 sword = knife:subclass
-	"classname=sword,sprite=69,name=sword,color=6,equip_slot=weapon,dthrown=3,flr_mult=1,bonuses={hit_boost=-10,dmin_boost=3,dmax_boost=6}"
+	"classname=sword,sprite=69,name=sword,equip_slot=weapon,dthrown=3,flr_mult=1,bonuses={hit_boost=-10,dmin_boost=3,dmax_boost=6}"
 
 --[[
 only slightly better than a torch
@@ -2050,8 +2024,8 @@ copy_all({
 		return self
 	end,
 	__sub=function(self,x)
-		self:hp_change(-x)
-		return self
+		--self:hp_change(-x)
+		return self + -x
 	end
 },creature.metatable)
 
@@ -2078,10 +2052,12 @@ each turn, creatures will either:
 2.attempt to return to a guard
 	position, if they have one
 3.wander around randomly
+[a2]:if true, the creature is
+taking a second bonus action
 --]]
-function creature:take_turn()
+function creature:take_turn(a2)
 	if not self.sleeping and self.pos then
-		function restart_turn() self:take_turn() end
+		function restart_turn() self:take_turn(a2) end
 		local cpos,target,guard_pos,
 		sight_rad,path,dest
 		= unpack(self,
@@ -2116,6 +2092,7 @@ function creature:take_turn()
 		if(not(self.path or guard_pos))d=rndint(3,0)
 		self:move(d)
 	end
+	if(self.fast and not a2)self:take_turn(true)
 end
 --[[
 creatures will attack eachother if
@@ -2123,7 +2100,8 @@ they're in the way, but they won't
 hurt their own kind
 --]]
 function creature:would_attack(c2)
-	return target==c2 or
+	return self.confused or
+	target==c2 or
 	not(self:class()<c2)
 end
 
@@ -2176,6 +2154,7 @@ level.
 [d]: optional direction
 --]]
 function creature:move(d)
+	if(self.confused and rnd(2)<1)d=rndint(3,0)
 	local path = self.path
 	if d or path then
  	local dpos = d and
@@ -2270,11 +2249,11 @@ kobold=rat:subclass
 
 --vicious but innacurate
 mantid=rat:subclass
-"classname=mantid,name=mantid,sprite=147,hp_max=12,hitrate=60,min_dmg=6,max_dmg=9,exp=10,flr_mult=10,item_table={potion=800,meat=500}"
+"classname=mantid,name=mantid,sprite=147,fast=true,hp_max=12,hitrate=60,min_dmg=6,max_dmg=9,exp=10,flr_mult=10,item_table={potion=800,meat=500}"
 
 --powerful guards
 watcher=mantid:subclass
-"classname=watcher,name=watcher,sight_rad=10,sprite=176,hp_max=20,hitrate=95,min_dmg=3,max_dmg=6,ac=3,exp=20,flr_mult=2,item_table={knife=500,sword=1000,bread=800,potion=400,spiked_armor=200}"
+"classname=watcher,name=watcher,sight_rad=10,sprite=176,hp_max=20,hitrate=95,fast=false,min_dmg=3,max_dmg=6,ac=3,exp=20,flr_mult=2,item_table={knife=500,sword=1000,bread=800,potion=400,spiked_armor=200}"
 function watcher:init(params)
 	creature.init(self,params)
 	self.guard_pos=-self.pos
@@ -2282,7 +2261,7 @@ end
 
 --player class
 player = creature:subclass
-"classname=player,name=rogue,color=7,sprite=128,hp_max=10,hitrate=85,min_dmg=1,max_dmg=5,take_turn=always_nil,item_table={bread=1000,apple=800,meat=200,torch=1000,potion=500,scroll=500}"
+"classname=player,name=rogue,sprite=128,hp_max=10,hitrate=85,fast=1,min_dmg=1,max_dmg=5,take_turn=always_nil,item_table={bread=1000,apple=800,meat=200,torch=1000,potion=500,scroll=5000}"
 
 function player:move(d)
 	if(not turn_running) creature.move(self,d)
@@ -2291,7 +2270,7 @@ end
 
 --########-tile classes-########-
 tile = object:subclass
-	"classname=tile,solid=true,sprite=nil,color=2"
+	"classname=tile,solid=true,sprite=nil"
 --occasionally switch up tile sprites
 function tile:init()
 	if(self.alt_sprite and rnd(100)<5) self.sprite=self.alt_sprite
@@ -2314,37 +2293,37 @@ function void:new()
 end
 
 floor = tile:subclass
-	"classname=floor,solid=false,sprite=19,alt_sprite=20,color=4"
+	"classname=floor,solid=false,sprite=19,alt_sprite=20"
 
 wall = tile:subclass
-	"classname=wall,sprite=16,alt_sprite=17,color=6"
+	"classname=wall,sprite=16,alt_sprite=17"
 
 dungeon_floor = floor:subclass
-"classname=dungeon_floor,item_table={knife=1,potion=2,scroll=2,mushroom=2,bread=1,plate_armor=0,leather_armor=-2},spawn_table={rat=100,kobold=200,mantid=0,watcher=-20}"
+"classname=dungeon_floor,item_table={knife=1,potion=2,scroll=2,mushroom=2,bread=1,plate_armor=-1,leather_armor=-2},spawn_table={rat=100,kobold=200,mantid=-20,watcher=-20}"
 
 dungeon_wall = wall:subclass
 	"classname=dungeon_wall"
 
 cave_floor=floor:subclass
-	"classname=cave_floor,sprite=3,alt_sprite=4,color=0,item_table={torch=20,apple=10,mushroom=50,potion=5,leather_armor=2},spawn_table={rat=400,mantid=-20,kobold=-2}"
+	"classname=cave_floor,sprite=3,alt_sprite=4,item_table={torch=20,apple=10,mushroom=50,potion=5,leather_armor=2},spawn_table={rat=400,mantid=-40,kobold=-2}"
 
 cave_wall=wall:subclass
-	"classname=cave_wall,sprite=0,alt_sprite=1,color=1"
+	"classname=cave_wall,sprite=0,alt_sprite=1"
 
 temple_floor=floor:subclass
-	"classname=temple_floor,sprite=35,alt_sprite=36,color=11,item_table={knife=20,tomahawk=0,sword=0,potion=30,scroll=30,ring=1,spiked_armor=0,warded_armor=-4},spawn_table={kobold=900,mantid=500,watcher=0}"
+	"classname=temple_floor,sprite=35,alt_sprite=36,item_table={knife=20,tomahawk=0,sword=0,potion=30,scroll=30,ring=1,spiked_armor=0,warded_armor=-4},spawn_table={kobold=900,mantid=-15,watcher=0}"
 
 throne=floor:subclass
-	"classname=throne,sprite=34,color=11"
+	"classname=throne,sprite=34"
 
 floor_pedestal=floor:subclass
-	"classname=floor_pedestal,sprite=18,color=6"
+	"classname=floor_pedestal,sprite=18"
 
 temple_wall=wall:subclass
-		"classname=temple_wall,sprite=32,alt_sprite=33,color=12"
+		"classname=temple_wall,sprite=32,alt_sprite=33"
 
 door = tile:subclass
-	"classname=door,sprite=21,color=9,use_sfx=9"
+	"classname=door,sprite=21,use_sfx=9"
 function door:on_move(mover)
 	if(self.solid)use(self,mover.pos)
 end
@@ -2354,7 +2333,6 @@ function door:use()
 	self.solid=not self.solid
 	self.use_sfx+=s_change
 	self.sprite+=s_change
-	self.color+=s_change
 end
 
 temple_door = door:subclass
@@ -2370,13 +2348,13 @@ temple_secret_door = door:subclass
 "classname=temple_secret_door,sprite=39"
 
 up_stair = tile:subclass
-	"classname=up_stair,sprite=5,color=13,solid=false"
+	"classname=up_stair,sprite=5,solid=false"
 function up_stair:use()
 	msg"you're not going back"
 end
 
 stair = tile:subclass
-	"classname=stair,sprite=6,color=13,solid=false"
+	"classname=stair,sprite=6,solid=false"
 function stair:use()
 	if get_tile(you.pos) == self then
 		level_init()
@@ -2385,7 +2363,6 @@ function stair:use()
 		foreach_pair(classtable,
 		function(cl)
 			if rat<cl then
-				--cl.exp+=flr(cl.exp*.5)
 				cl.hp_max+=2
 				cl.min_dmg+=1
 				cl.max_dmg+=1
@@ -2478,7 +2455,7 @@ function build_level()
 					if build_dungeon then
 						if(next_to(p,builder_floors)==1 or not in_bounds(p))t.fixed=true
 						if(dungeon_wall<t) t.doorway=true
-						if(not t.bright)torch(p)
+						if(not t.lights)torch(p)
 					else
 						if p:dist(build_pos) <=
 						last_room.w/2 then
@@ -2843,7 +2820,7 @@ function stats:update()
 	self:clear()
 	local titles,vals=
 	str_to_table
-	"armor class:damage:hit rate:,creatures killed:,most exp:,most kills:,deepest floor:",
+	"armor class:,damage:,hit rate:,creatures killed:,most exp:,most kills:,deepest floor:",
 	{
 		you.ac,
 		(you.min_dmg+you.dmin_boost).."-"..(you.max_dmg+you.dmax_boost),
@@ -2937,7 +2914,7 @@ end
 --keep the draw area centered
 --around the player
 function set_screen()
-	screen-=screen+point(8,8)-you.pos
+	screen-=screen+(point"x=8,y=8")-you.pos
 end
 
 --##### main game loop ########--
@@ -2966,9 +2943,9 @@ function _init()
 	unpack"false,0,0,0,7,1,true,true,0,{0,0,0},{weapon,armor,rings}"
 	you,draw_tbl,los_tbl =
 	player(build_pos),
-	point_mapping(mem_to_str(0x2000,0x284)),{}
+	point_mapping"addr=2000,len=284",{}
 	set_screen()
-	local los_array= point_mapping(mem_to_str(0x2284,0x3ca))
+	local los_array= point_mapping"addr=2284,len=3ca"
 	foreach(los_array,
 	function(los_pt)
 		local mapped = {}
@@ -2993,7 +2970,6 @@ function _update()
 			true,true,no_ctrl
 		end
 		turn_running =false
-		--set_redraw()
 		local exp=you.exp
 		you.hp_max,you.max_dmg,you.hitrate=
 		10+flr(exp/30),
@@ -3018,8 +2994,10 @@ function _draw()
 	frame=loop_add(frame,1)
 	--### draw loading screen #######
 	if title or	building then
+		palt(0,false)
 		sspr(32*(flr((frame%18)/6)),unpack"96,32,32,0,0,128,128")
 		if(frame%9==0)sfx(0)
+		pal()
 		if(title) sspr(unpack"64,64,64,16,14,0,100,25")
 		local txt = "press any key to start"
 		if(build_percent < 100) txt="descending:"..build_percent.."%"
@@ -3047,16 +3025,16 @@ function _draw()
 			get_tile(abs_pos) or void,
 			#keypt
 			foreach_pair(dark_pal,function(v,k)
-				pal(k,you.hallucinating and rndint(16,0) or
+				pal(k,you.confused and rndint(16,0) or
 				v)
 			end)
 			if reveal_all or not (hidden[key]
 			or t < void
 			or (you.pos:dist(abs_pos)
-			> you.sight_rad and not t.bright)
+			> you.sight_rad and not t.lights)
 			or you.can_see == always_nil) then
 				t.seen=true
-				if not you.hallucinating then
+				if not you.confused then
 					pal()
 				end
 				draw(t.sprite)
@@ -3083,18 +3061,22 @@ function _draw()
 
 		--#### draw minimap window ######
 		if show_map then
-			draw_border"32,28,69,69"
+			draw_border"17,19,94,94"
+			rectfill(unpack"19,21,110,112,0")
 			foreach_tile(function(p,t)
 				if t.seen or reveal_all then
-					local c=t.color
+					function mapspr(s)
+						local x,y = ((p*3)+point"x=19,y=21"):get_xy()
+						sspr((s%16)*8,flr(s/16)*8,8,8,x,y,3,3)
+					end
+					mapspr(t.sprite)
+					--local s=t.sprite
 					--if(pathtrace and pathtrace[#p])c=pathtrace[#p]
 					if visible(p) then
 						foreach_entity(function(e)
-							c=e.color
+							mapspr(e.sprite)
 						end,rectangle(p))
 					end
-					local x,y = ((p*2)+point(38,34)):get_xy()
-					rectfill(x,y,x+2,y+2,c)
 				end
 			end)
 		end
@@ -3107,7 +3089,7 @@ function _draw()
 	local last,curr = msg.last or "",msg.curr or ""
 	print(last,4,4,9)
 	if(#msg>0)spr(unpack"31,120,10")
-	print(curr,4,10,10)
+	print(curr,unpack"4,10,10")
 
 	--######## draw menus ##########
 	foreach(open_menus.values,
@@ -3223,12 +3205,12 @@ f4efffe04eee4ef004efff000555b0b0b555b0000b5a5a0000000000000000000000000000000000
 22211222244111198441114222212222222224411119888882111211422222222222441224991111844444411111442242222414222400000000000000000000
 21112222441124198442111112112222222244411491118881142221144222212224411111111111844222211111112242222414222400000000000000000000
 11122224111499118442211111112222222244112491491881444222111111112244111111199118842222111111111142222414222400000000000000000000
-11222224111111188144214222212222222441124991491881444422211111114441144111491188842222114441222142222444222400000000000000000000
-11111111112441889144214222211222222411111111118884444422211442221111424111111189942222114222222242222244222400000000000000000000
-11444411122491899114414222211222221112244111988994444442211442221111221119991189a11221114222222242222244222400000000000000000000
-2222441112249189a1144144222112221111222441498899a4411444441142221441221144491889a11111111422222242222222222400000000000000000000
-2222224114441889a4111144442112211111222441498899a1111144441442224441221144991889a44111111142122242222222222400000000000000000000
-22222441111118ddd4111111122111114441222411498dd77114411111144222224111124111777dd44411141111111242222222222400000000000000000000
+11222224111111188144214000012222222441124991491881444422211111114441144111491188842222114441222142222444222400000000000000000000
+11111111112441889144214000011222222411111111118884444422211442221111424111111189942222114222222242222244222400000000000000000000
+11444411122491899114414000011222221112244111988994444442211442221111221119991189a11221114222222242222244222400000000000000000000
+2222441112249189a1144144000112221111222441498899a4411444441142221441221144491889a11111111422222242222222222400000000000000000000
+2222224114441889a4111144440112211111222441498899a1111144441442224441221144991889a44111111142122242222222222400000000000000000000
+22222441111118ddd4111111100111114441222411498dd77114411111144222224111124111777dd44411141111111242222222222400000000000000000000
 222221111117777dd4442221111111112441224411177ddd711444411114422222412411117ddd77d42411144111111242244444442400000000000000000000
 222221111155dd77d44442221111111222411111111d777dd4144444111144422441244117777ddd742211142222111142241141142400000000000000000000
 2222111777777dddd44444221422222222441111167dddddd44442222211111124114411ddddd77dd42211142222111142241111142400000000000000000000
