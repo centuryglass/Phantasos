@@ -43,11 +43,21 @@ end
 	--[[
 	######-data management-#########
 	--]]
+	
 	--reused whenever needed as
 	--callback functions
 	function always_true() return true end
 	function always_nil() end
 
+--[[
+function table
+references to these functions
+can be parsed from strings
+--]]
+fns={
+	always_true=always_true,
+	always_nil=always_nil
+}
 --[[
 map characters to indices so
 strings can be loaded from memory.
@@ -118,12 +128,11 @@ function str_to_val(str)
 	end
 	if(is_numstr(str)) str+=0
 	if(str == "false")return false
-	if(str == "nil")return nil
+	if(str == "nil")return
 	return (str == "true") and true
-	or (str == "always_nil") and always_nil
-	or (str == "always_true") and always_true
 	or (str == "{}") and {}
 	or classtable[str]
+	or fns[str]
 	or str
 end
 
@@ -1651,7 +1660,7 @@ function item:change_qty(qty)
 			del(self.holder.items,self)
 		end
 		remove_entity(self)
-		self.holder,self.pos=nil
+		copy_all("holder=nil,pos=nil",self)
 	end
 end
 
@@ -1703,7 +1712,6 @@ color_coded_itm=item:subclass
 function color_coded_itm:classgen()
 	--randomize color/function assignment
 	local colors = rnd_queue()
-	assert(self.colors)
 	foreach_pair(self.colors,
 	function(name,cnum)
 		colors{
@@ -1758,9 +1766,8 @@ potion=color_coded_itm:subclass
 "flr_mult=3,sprite=65,throw_sfx=7,use_sfx=4,classname=potion,types={{r_name=healing,use_msg=you are healed,ti=1},{r_name=poison,use_msg=you feel sick,ti=3},{r_name=wisdom,use_msg=you feel more experienced,ti=4},{r_name=sleep,use_msg=you fell asleep,ti=5},{r_name=lethe,use_msg=where are you?,ti=6},{r_name=water,use_msg=refreshing!,ti=7},{r_name=juice,use_msg=yum,ti=8},{r_name=spectral,use_msg=you feel ghostly,ti=9},{r_name=toughness,use_msg=nothing can hurt you now!,ti=10},{r_name=blindness,use_msg=who turned out the lights?,ti=11},{r_name=speed,use_msg=the world slows down.,ti=12}},colors={1=viscous,2=fizzing,3=grassy,4=umber,5=ashen,6=smoking,7=milky,8=bloody,9=orange,10=glowing,11=lime,12=sky,13=reeking,14=fragrant,15=bland,0=murky}"
 potion:classgen()
 function potion:on_use(c)
-
-	local ti,is_player,n_turns=
-	self.ti,c==you,rndint(10,4)
+	local ti,is_player=
+	self.ti,c==you
 	--healing: restore max hp
 	if(ti == 1)c.hp=c.hp_max
 	--poison: take damage for several
@@ -1772,10 +1779,10 @@ function potion:on_use(c)
 	--restore 1 hp per turn
 	if(ti == 5)sleep(c)
 	--amnesia: forget the level layout
-	--todo: make this do something to
-	--non-player creatures
+	--makes enemies forget target 
+	--and path
 	if ti == 6 then
-		if(not is_player) return
+		copy_all("target=nil,path=nil",c)
 		foreach_tile(function(p,t)
 			t.seen = nil
 		end)
@@ -1912,7 +1919,11 @@ function equipment:equip(c)
 	if(equipped)equipped:remove()
 	foreach_pair(self.bonuses,
 	function(v,k)
-		c[k]+=v
+		if type(v) == "number" then 
+			c[k]+=v
+		else
+			c[k]=v
+		end
 	end)
 	remove_entity(itm)
 	c.equipped[equip_slot],itm.holder
@@ -1924,7 +1935,11 @@ function equipment:remove()
 	holder.equipped[self.equip_slot]=nil
 	foreach_pair(self.bonuses,
 	function(v,k)
-		holder[k]-=v
+		if type(v) == number then 
+			holder[k]-=v
+		else
+			holder[k]=holder:class()[k]
+		end
 	end)
 	holder:drop(self)
 	holder:take(self)
@@ -2261,7 +2276,7 @@ end
 
 --player class
 player = creature:subclass
-"classname=player,name=rogue,sprite=128,hp_max=10,hitrate=85,fast=1,min_dmg=1,max_dmg=5,take_turn=always_nil,item_table={bread=1000,apple=800,meat=200,torch=1000,potion=500,scroll=5000}"
+"classname=player,name=rogue,sprite=128,hp_max=10,hitrate=85,min_dmg=1,max_dmg=5,take_turn=always_nil,item_table={bread=1000,apple=800,meat=200,torch=1000,potion=500,scroll=5000}"
 
 function player:move(d)
 	if(not turn_running) creature.move(self,d)
@@ -3397,3 +3412,4 @@ __music__
 00 01004344
 00 41424344
 00 41424344
+

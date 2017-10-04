@@ -1,0 +1,37 @@
+status={
+	sleep={
+		s= fell asleep!,
+		t= is fast asleep.,
+		e= woke up.
+	},
+	confusion={
+		s= looks unsteady.
+		e='s vision clears
+	},
+	spectral={
+		s= can walk through walls.,
+		e= is solid again.
+	},
+	poison={
+		s= looks sick.,
+		t= is hurt by poison.,
+		e= looks healthier.
+	},
+	haste={
+		s= speeds up.,
+		e= slows down.
+	},
+	blind={
+		s= is blind!,
+		e= can see again.
+	},
+	enlightened={
+		s= can see everything.
+	},
+	tough={
+		s= looks tougher.,
+		e= looks vulnerable
+	}
+}
+
+--
