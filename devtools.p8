@@ -1184,7 +1184,6 @@ function rnd_queue:pop()
 	self.length-=1
 	return val
 end
-
 --[[
 #########-point class-###########
 represents a 2d point
@@ -1241,7 +1240,7 @@ copy_all({
 		return point(pt.x*x,pt.y*y)
 	end,
 	__div=function(pt,n)
-		return point(pt.x/n,pt.y/n)
+		return pt*(1/n)
 	end,
 	__unm=function(pt)
 		return point(pt)
@@ -1267,12 +1266,9 @@ d: matches button mappings
 --]]
 function point:move(d,n)
 	n = n or 1
+	local ax=d<2 and "x" or "y"
 	if(d%2==0)n*=-1
-	if d < 2 then
-		self.x+=n
-	else
-		self.y+=n
-	end
+	self[ax]+=n
 	return self
 end
 
@@ -1283,8 +1279,7 @@ to p2
 function point:dist(p2)
 	local ay,ax = (p2-self):get_xy()
 	ay,ax = abs(ay),abs(ax)
-	if(ay > ax) return ay + ax/2
-	return ax + ay/2
+	return max(ay,ax)+min(ay,ax)/2
 end
 
 --[[
@@ -1295,7 +1290,7 @@ by 90 degrees
 --]]
 function point:rotate(pivot,turns_cw)
 	if(turns_cw == 0)return -self
-	pivot,turns_cw=pivot or point(0,0),
+	pivot,turns_cw=pivot or point"x=0,y=0",
 	turns_cw or 1
 	local rot=self-pivot
 	rot(-rot.y,rot.x)
@@ -1309,12 +1304,6 @@ end
 function point:get_xy()
 	return self.x,self.y
 end
-
-function point:exact_distance(p2)
-	local dx,dy=(p2-self):get_xy()
-	return sqrt(dx*dx+dy*dy)
-end
-
 
 function point:to_string()
 	return "x="..self.x..",".."y="..self.y
@@ -1359,7 +1348,7 @@ end
 copy_all({
 	__call=function(self,a,b,c,d)
 		if(not a) return self"0,0,1,1"
-		if(is_string(a)) return self(str_to_list(a))
+		if(is_string(a)) return self(unpack(a))
 		if rectangle<a then
 			copy_all(a,self)
 		elseif point<a then
@@ -1389,10 +1378,14 @@ copy_all({
 		return r2
 	end,
 	__mul=function(r,n)
-		return rectangle(r.x,r.y,r.w*n,r.h*n)
+		local r2= -r
+		r2.w*=n
+		r2.h*=n
+		return r2
 	end,
 	__div=function(r,n)
-		return rectangle(r.x,r.y,r.w/n,r.h/n)
+		return r*(1/n)
+		--return rectangle(r.x,r.y,r.w/n,r.h/n)
 	end,
 	__eq=function(r1,r2)
 		return r1:p1()==r2:p1() and
