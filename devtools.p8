@@ -28,12 +28,12 @@ entity_sprites=
 
 function sprite_table(str)
 	local stab,ranges={},
-	split(str,",")
+	arr_split(str,",")
 	foreach(ranges,function(r)
 		if not str_contains(r,"-") then
 			add(stab,r+0)
 		else
-			r=split(r,"-")
+			r=arr_split(r,"-")
 			local s,e=r[1]+0,r[2]+0
 			for i=s,e do
 				add(stab,i)
@@ -257,6 +257,16 @@ end
 	function always_true() return true end
 	function always_nil() end
 
+	--[[
+	function table
+	references to these functions
+	can be parsed from strings
+	--]]
+	vars={
+		always_true=always_true,
+		always_nil=always_nil,
+		sspr=sspr
+	}
 --[[
 map characters to indices so
 strings can be loaded from memory.
@@ -367,11 +377,28 @@ function str_replace(str,c,repl)
 	return rval
 end
 
+--split around char, put in queue
+function split(str,char)
+	local buf,subs,length =
+	"",queue(),#str+1
+	for i = 1, length do
+		local c = sub(str,i,i)
+		if str_contains(char,c)or i==length then
+			subs(buf)
+			buf = ""
+		else
+			buf = buf .. c
+		end
+	end
+	return subs
+end
+
+
 --[[
-split str into an array around
+arr_split str into an array around
 instances of char
 --]]
-function split(str,char)
+function arr_split(str,char)
 	local buf,subs,length =
 	"",{},#str+1
 	for i = 1, length do
@@ -385,6 +412,8 @@ function split(str,char)
 	end
 	return subs
 end
+
+
 
 --[[
 recognizes non-string values
@@ -400,20 +429,32 @@ strings: anything that doesn't
 fit in any other categories
 --]]
 function str_to_val(str)
-	if sub(str,1,1) == "{"
-	and sub(str,#str,#str) == "}"
-	then
+	local lastchar=sub(str,#str)
+	if lastchar == "}" then
 		return str_to_table(sub(str,2,#str-1))
+	elseif lastchar == ")" then
+		local fn=""
+		for i=1,#str do
+			local c = sub(str,i,i)
+			if c=="(" then
+				return str_to_val(fn)(unpack(sub(str,i,#str-1)))
+			else
+				fn=fn..i
+			end
+		end
 	end
+
+
 	if(is_numstr(str)) str+=0
 	if(str == "false")return false
-	if(str == "nil")return nil
+	if(str == "nil")return
 	return (str == "true") and true
-	or (str == "always_nil") and always_nil
-	or (str == "always_true") and always_true
 	or (str == "{}") and {}
-	or classtable[str] or str
+	or classtable[str]
+	or vars[str]
+	or str
 end
+
 
 
 --[[
@@ -567,10 +608,10 @@ a string
 --]]
 function point_mapping(str)
 	local hex_tbl,pt_tbl,mapped,offset=
-	split(str,","),{},{},point(8,8)
+	arr_split(str,","),{},{},point(8,8)
 	for i=1, #hex_tbl do
 		local transformations=
-		split("x=1,y=1 x=-1,y=1 x=1,y=-1 x=-1,y=-1"," ")
+		arr_split("x=1,y=1 x=-1,y=1 x=1,y=-1 x=-1,y=-1"," ")
 		foreach(transformations,
 		function(transform)
 			local pts=hex_to_pts(hex_tbl[i],
@@ -664,19 +705,21 @@ end
 function is_table(var)
 	return type(var) == "table"
 end
---[[
-returns all items in array t, in
-order
---]]
-function unpack(t,index,last)
-	if is_string(t) then
-		t= str_to_table(t)
-	end
-	index,last=index or 1,last or #t
-	if(index>last)return
-	return t[index],unpack(t,index+1,last)
-end
 
+function unpack(t,index)
+	t,index=str_to_table(t),
+	str_to_table(index) or 1
+	local key = index
+	if is_table(index) then
+		key=index[1]
+		if(#index==0) return
+		del(index,key)
+	else
+		index+=1
+		if(key>#t)return
+	end
+	return t[key],unpack(t,index)
+end
 
 --[[
 run fn(v,k) for each key:value
@@ -1602,7 +1645,7 @@ function _init()
 	local potion=str_to_table
 	"classname=potion,sprite=65,color=13,use_sfx=4,throw_sfx=7,flr_mult=3,names={1=healing,2=vision,3=poison,4=wisdom,5=sleep,6=lethe,7=water,8=juice,9=spectral,10=toughness,11=blindness},messages={1=you are healed,2=you see everything!,3=you feel sick,4=you feel more experienced,5=you fell asleep,6=where are you?,7=refreshing!,8=yum,9=you feel ghostly,10=nothing can hurt you now!,11=who turned out the lights?},colors={0=murky,1=viscous,2=fizzing,3=grassy,4=umber,5=ashen,6=smoking,7=milky,8=bloody,9=orange,10=glowing,11=lime,12=sky,13=reeking,14=fragrant,15=bland}"
 
-	local mushroom=str_to_table	
+	local mushroom=str_to_table
 	"classname=mushroom,sprite=67,use_sfx=5,color=4,names={1=tasty,2=disgusting,3=deathcap,4=magic},messages={1=that was delicious,2=that was awful,3=you feel deathly ill,4=look at the colors!},colors={1=speckled,3=moldy,6=chrome,8=bleeding,14=lovely,15=fleshy}"
 
 	local scroll=str_to_table
@@ -1623,7 +1666,7 @@ function _init()
 		tab.messages=nil
 		return to_string(tab)
 	end
-	
+
 	log("potion=item.subclass")
 	log("\""..str_edit(potion).."\"")
 	log("mushroom=item.subclass")
@@ -1729,8 +1772,9 @@ function _draw()
 	if cart_state=="none" then
 		draw_border"14,38,104,37"
 		print("devtools",52,62,10)
-		print("Ž:open menu",44,69,10)
-		sspr(unpack"64,64,64,16,14,40,100,25")
+		print("ï¿½:open menu",44,69,10)
+		str_to_val"sspr(64,64,64,16,14,40,100,25)"
+		--sspr(unpack"64,64,64,16,14,40,100,25")
 	elseif cart_state=="mem_ops" then
 		draw_mem_info()
 	elseif cart_state=="draw_testing" then
@@ -2067,4 +2111,3 @@ __music__
 00 41424304
 00 41424344
 00 41424344
-
