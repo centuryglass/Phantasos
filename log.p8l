@@ -1,7 +1,10 @@
-p(warded_armor)=-3
-p(warded_armor)=-3
-p(warded_armor)=-3
-p(warded_armor)=-3
-p(warded_armor)=-3
-p(warded_armor)=-3
-p(mantid)=-10
+classname=timer
+classname=queue,length=0
+classname=stack
+classname=p_queue
+classname=rnd_queue
+classname=point,x=0,y=0
+classname=rectangle
+classname=menu,index=1,turn_modded=0
+5,25,4,12
+true

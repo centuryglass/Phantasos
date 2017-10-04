@@ -509,6 +509,8 @@ function str_to_table(str,tab)
 	--value was found makes it possible
 	--to add nil and false to tables
 	local val,key="null"
+	log(str)
+	assert(is_string(str))
 	while i<=#str do
 		i+=1
 		local c = sub(str,i,i)
@@ -523,7 +525,7 @@ function str_to_table(str,tab)
 				local c2=sub(str,i2,i2)
 				to_close += (c2=="{" and 1 or c2=="}" and -1 or 0)
 				if to_close == 0 then
-					--log("reading sub-table")
+					log("reading sub-table")
 					val=str_to_table(sub(str,i+1,i2-1))
 					i=i2+1
 					break
@@ -2111,3 +2113,4 @@ __music__
 00 41424304
 00 41424344
 00 41424344
+
