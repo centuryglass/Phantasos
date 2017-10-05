@@ -27,13 +27,13 @@ entity_sprites=
 "64-78,80-84,128-133,144-149,160-165,176-178"
 
 function sprite_table(str)
-	local stab,ranges={},
-	arr_split(str,",")
+	stab={}
+	local ranges=split(str,",")
 	foreach(ranges,function(r)
 		if not str_contains(r,"-") then
 			add(stab,r+0)
 		else
-			r=arr_split(r,"-")
+			r=split(r,"-")
 			local s,e=r[1]+0,r[2]+0
 			for i=s,e do
 				add(stab,i)
@@ -265,7 +265,12 @@ end
 	vars={
 		always_true=always_true,
 		always_nil=always_nil,
-		sspr=sspr
+		sspr=sspr,
+		print=print,
+		add=add,
+		flr=flr,
+		str_contains=str_contains,
+		draw_border=draw_border
 	}
 --[[
 map characters to indices so
@@ -377,28 +382,11 @@ function str_replace(str,c,repl)
 	return rval
 end
 
---split around char, put in queue
-function split(str,char)
-	local buf,subs,length =
-	"",queue(),#str+1
-	for i = 1, length do
-		local c = sub(str,i,i)
-		if str_contains(char,c)or i==length then
-			subs(buf)
-			buf = ""
-		else
-			buf = buf .. c
-		end
-	end
-	return subs
-end
-
-
 --[[
-arr_split str into an array around
+split str into an array around
 instances of char
 --]]
-function arr_split(str,char)
+function split(str,char)
 	local buf,subs,length =
 	"",{},#str+1
 	for i = 1, length do
@@ -430,21 +418,9 @@ fit in any other categories
 --]]
 function str_to_val(str)
 	if(not is_string(str))return str
-	local lastchar=sub(str,#str)
-	if lastchar == "}" then
+	if sub(str,#str) == "}" then
 		return str_to_table(sub(str,2,#str-1))
-	elseif lastchar == ")" then
-		local val=""
-		for i=1,#str do
-			local c = sub(str,i,i)
-			if c=="(" then
-				return str_to_val(val)(unpack(sub(str,i+1,#str-1)))
-			else
-				val=val..c
-			end
-		end
 	end
-
 
 	if(is_numstr(str)) str+=0
 	if(str == "false")return false
@@ -466,32 +442,32 @@ function brackets(str)
 	for i = 1,#str do
 		local c = sub(str,i,i)
 		unclosed += (c==open and 1 or c==close and -1 or 0)
-		log(c..":"..unclosed)
+		--log(c..":"..unclosed)
 		if(unclosed == 0) return i
 	end
 end
 
 function priority(op)
 	local p_tbl={
-		["^"]=1,
-		[".."]=5,
-		["&"]=7,
-		["|"]=9,
-		[","]=10
+		["^"]=2,
+		[".."]=6,
+		["&"]=8,
+		["|"]=10,
+		[","]=1
 	}
- if str_contains(op,"{(<") then
+ if str_contains(op,"{([") then
   return 0
  end
 	if str_contains(op,"<>.:")
 	or (op == "==") then
-		return 6
+		return 7
 	end
 	return p_tbl[op]
-	or str_contains(op,"=") and 9
-	or str_contains(op,"!#") and 2
-	or str_contains(op,"*/%") and 3
-	or str_contains(op,"+-") and 4
-	or 11
+	or str_contains(op,"=") and 10
+	or str_contains(op,"!#") and 3
+	or str_contains(op,"*/%") and 4
+	or str_contains(op,"+-") and 5
+	or 12
 end
 
 ops = {
@@ -572,21 +548,18 @@ ops = {
 	end,
 	[".="]=function(v1,v2)
 		vars[v1]=vars[v1]..v2
-	end,
-	["."]=function(v1,v2)
-		return v1[v2]
 	end
 }
 
 function parse(str,tokens)
 	if(not is_string(str))return str
-	local tokens,buf,i=
+	local tokens,buf,i,esc=
 	tokens or queue(),"",1
 	if #tokens==0 then
 		while i<=#str do
 			local c,c2 = sub(str,i,i),
 			sub(str,i+1,i+1)
-			if ops[c..c2] then
+			if not esc and ops[c..c2] then
 				c=c..c2
 				i+=1
 			end
@@ -598,39 +571,47 @@ function parse(str,tokens)
 					c,i=sub(str,i,close),close
 				end
 				tokens(c)
+			elseif c=="$" then
+				esc=true
 			else
-				buf=buf..c
+				buf,esc=buf..c
 			end
 			i+=1
 		end
 		if(#buf>0)tokens(buf)
 	end
-	tokens:clear()
-	--[[
-	for i=1,#tokens do
-		local token=tokens:get(i)
-		log("token "..i.."="..token..":"..priority(token))
-	end
-	--]]
+	--tokens:clear()
+
 	while #tokens>1 do
-		local op_index,pr,op=1,11
+	---[[
+		local tlist=""	
+		for i=1,#tokens do
+			local token=tokens:get(i)
+			tlist=tlist.."<"..to_string(token)..">"
+		end
+		log(tlist)
+		--]]
+		local op_index,pr,op=1,13
 		for i=1,#tokens do
 			local o2=tokens:get(i)
-			local p2=priority(tokens:get(i))
-			if(p2<p)op,op_index,p=o2,i,p2
+			local p2=priority(o2)
+			--log(to_string(o2)..":"..p2)
+			if(p2<pr)op,op_index,pr=o2,i,p2
 		end
+		--log("op="..op_index.."("..op..")")
 		--parse functions/tables
 		if op == "," then
-			assert(op_index == 2)
+			--assert(op_index == 2)
 			local v=-tokens
 			tokens:pop()
 			return parse(v),parse(str,tokens)
 		end
 		if pr==0 then
-			local bracket_type,caller=
-			sub(op,1,1)
+			local bracket_type,op,caller=
+			sub(op,1,1),
+			sub(op,2,#op-1)
 			if i>1 and
-			priority(tokens:get(op_index-1)) == 10 then
+			priority(tokens:get(op_index-1)) == 12 then
 				op_index-=1
 				caller=parse(tokens:pop(op_index))
 			end
@@ -644,15 +625,16 @@ function parse(str,tokens)
 			and str_to_val(caller){parse(op)}
 			or {parse(op)})
 		--one value operators
-		else if pr==2 then
+		elseif pr==2 then
 			local operand=tokens:pop(op_index+1)
 			tokens.values[op_index]=ops[op](operand)
 			--two value operatiors
 		else
-			local v2,v1=
-			tokens:pop(op_index+1),
-			tokens:pop(op_index-1)
-			tokens.values[op_index]=ops[op](v1,v2)
+			--log("op="..tokens:get(op_index))
+			local v1=tokens:pop(op_index-1)
+			if(pr!=10)v1=parse(v1)
+			tokens.values[op_index-1]=
+			ops[op](v1,parse(tokens:pop(op_index)))
 		end
 	end
 	return str_to_val(-tokens)
@@ -751,20 +733,6 @@ function str_to_table(str,tab)
 	return tab
 end
 
---[[
-extract a sequence of values
-stored in a string
-str:can define a table or array
-	string
---]]
-function str_to_list(str)
-	local t = is_table(str) and str
-	if t then
-		str=""
-		foreach(t,function(v) str=str..v.."," end)
-	end
-	return unpack(str_to_table(str))
-end
 
 --[[
 convert hex strings to number data
@@ -810,10 +778,10 @@ a string
 --]]
 function point_mapping(str)
 	local hex_tbl,pt_tbl,mapped,offset=
-	arr_split(str,","),{},{},point(8,8)
+	split(str,","),{},{},point(8,8)
 	for i=1, #hex_tbl do
 		local transformations=
-		arr_split("x=1,y=1 x=-1,y=1 x=1,y=-1 x=-1,y=-1"," ")
+		split("x=1,y=1 x=-1,y=1 x=1,y=-1 x=-1,y=-1"," ")
 		foreach(transformations,
 		function(transform)
 			local pts=hex_to_pts(hex_tbl[i],
@@ -985,6 +953,7 @@ end
 make rounding errors go away
 --]]
 function round(val)
+	vars.val=val
 	return flr(val)+
 	(val%1>0.5 and 1 or 0)
 end
@@ -1298,13 +1267,13 @@ end
 function queue:pop(i)
 	i=i or 1
 	local val = self:get(i)
- if first then
-  for i = i+1, #self do
-   self.values[i-1],
-   self.values[i] = self:get(i),nil
+ if val then
+  for i2 = i+1, #self do
+   self.values[i2-1],
+   self.values[i2] = self:get(i2),nil
   end
   self.length-=1
-  return first
+  return val
  end
 end
 
@@ -1698,6 +1667,8 @@ function draw_border(r)
 	rectfill(argsort(4,r:xy1xy2()))
 	rectfill(argsort(2,(-r):expand(-1):xy1xy2()))
 end
+
+vars.draw_border=draw_border
 --###### game menus ##########--
 menu=stack:subclass
 "classname=menu,index=1,turn_modded=0"
@@ -1745,10 +1716,13 @@ function menu:draw()
 	6*#self+12
 	draw_border(pos)
 	for i=1,#self do
-		local dp = point(2,6*i+2)+pos
-		if(i==self.index)spr(31,dp:get_xy())
-		print(self:get(i).name,dp.x+9,dp.y,10)
-		i+=1
+		copy_all({
+		i=i,
+		pos=pos,
+		self=self},vars)
+		parse"dp=point(2,6*i+2)+pos"
+		if(i==self.index)spr(31,vars.dp:get_xy())
+		parse"print(self[get](self,i)[name],dp[x]+9,dp[y],10)"
 	end
 end
 
@@ -1863,13 +1837,14 @@ function _init()
 		tab.messages=nil
 		return to_string(tab)
 	end
-
+	--[[
 	log("potion=item.subclass")
 	log("\""..str_edit(potion).."\"")
 	log("mushroom=item.subclass")
 	log("\""..str_edit(mushroom).."\"")
 	log("scroll=item.subclass")
 	log("\""..str_edit(scroll).."\"")
+	--]]
 	floor_sprites=sprite_table(floor_sprites)
 	entity_sprites=sprite_table(entity_sprites)
 	draw_tbl = point_mapping(draw_mapping)
@@ -1911,10 +1886,10 @@ function draw_mem_info()
 		w=max(w,#s*4+20)
 	end)
 	draw_border(rectangle(4,4,w,h))
-	local y=10
+	parse"y=10"
 	foreach(mem_info,function(s)
-		print(s,10,y,10)
-		y+=8
+		vars.s=s
+		parse"print(s,10,y,10),y+=8"
 	end)
 end
 
@@ -1977,10 +1952,8 @@ function _draw()
 	cls()
 	run_coroutines(draw_routines,true)
 	if cart_state=="none" then
-		draw_border"14,38,104,37"
-		print("devtools",52,62,10)
-		print("�:open menu",44,69,10)
-		str_to_val"sspr(64,64,64,16,14,40,100,25)"
+		
+		parse"draw_border(rectangle(14,38,104,37)),print(devtools,52,62,10),print(x$:open menu,44,69,10),sspr(64,64,64,16,14,40,100,25)"
 		--sspr(unpack"64,64,64,16,14,40,100,25")
 	elseif cart_state=="mem_ops" then
 		draw_mem_info()
@@ -2318,3 +2291,4 @@ __music__
 00 41424304
 00 41424344
 00 41424344
+
