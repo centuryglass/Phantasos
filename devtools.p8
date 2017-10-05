@@ -429,11 +429,12 @@ strings: anything that doesn't
 fit in any other categories
 --]]
 function str_to_val(str)
+	if not(is_string(str))return str
 	local lastchar=sub(str,#str)
 	if lastchar == "}" then
 		return str_to_table(sub(str,2,#str-1))
 	elseif lastchar == ")" then
-		local fn=""
+		local val=""
 		for i=1,#str do
 			local c = sub(str,i,i)
 			if c=="(" then
@@ -456,7 +457,145 @@ function str_to_val(str)
 end
 
 
+function brackets(str)
+	local open,unclosed,substr =
+	sub(str,1,1),1,""
+	local close = open=="{" and "}"
+	or open=="(" and ")"
+	or open=="[" and "]"
+	for i = 2,#str do
+		local c = sub(str,i,i)
+		unclosed += (c==open and 1 or c==close and -1 or 0)
+		if(unclosed == 0) return i
+	end
+end
 
+function priority(op)
+	local p_tbl={
+		["^"]=1,
+		["!"]=2,
+		[".."]=5,
+		["&"]=7,
+		["|"]=9
+	}
+ return str_contains(op,"{(<")) and 0
+	or p_tbl[op]
+	or (str_contains(op,"<>.:") or op == "==") and 6
+	or str_contains(op,"=")) and 9
+	or str_contains(op,"*/%") and 3
+	or str_contains(op,"+-") and 4
+end
+
+ops = {
+	[","] = function(v1,v2)
+		return v1,v2
+	end,
+	[".."] = function(v1,v2)
+		return v1..v2
+	end,
+	["#"] = function(v1)
+		return #v1
+	end,
+	--number math
+	["+"] = function(v1,v2)
+		return v1+v2
+	end,
+	["-"] = function(v1,v2)
+		return v1-v2
+	end,
+	["*"] = function(v1,v2)
+		return v1*v2
+	end,
+	["/"]=function(v1,v2)
+		return v1/v2
+	end,
+	["%"]=function(v1,v2)
+		return v1%v2
+	end,
+	["^"]=function(v1,v2)
+		return v1%v2
+	end,
+--boolean
+	["&"]=function(v1,v2)
+		return v1 and v2
+	end,
+	["|"]=function(v1,v2)
+		return v1 or v2
+	end,
+	["!"]=function(v1)
+		return not v1
+	end,
+	["=="]=function(v1,v2)
+		return v1==v2
+	end,
+	["!="]=function(v1,v2)
+		return v1!=v2
+	end,
+	[">"]=function(v1,v2)
+		return v1>v2
+	end,
+	["<"]=function(v1,v2)
+		return v1<v2
+	end,
+	["<="]=function(v1,v2)
+		return v1<=v2
+	end,
+	[">="]=function(v1,v2)
+		return v1>=v2
+	end,
+	--assignment
+	["="]=function(v1,v2)
+		vars[v1]=v2
+	end,
+	["+="]=function(v1,v2)
+		vars[v1]+=v2
+	end,
+	["-="]=function(v1,v2)
+		vars[v1]-=v2
+	end,
+	["*="]=function(v1,v2)
+		vars[v1]*=v2
+	end,
+	["/="]=function(v1,v2)
+		vars[v1]/=v2
+	end,
+	["%="]=function(v1,v2)
+		vars[v1]%=v2
+	end,
+	[".="]=function(v1,v2)
+		vars[v1]=vars[v1]..v2
+	end,
+	["."]=function(v1,v2)
+		return v1[v2]
+	end
+}
+
+function tokenize(str)
+	if not(is_string(str))return str
+	local tokens,buf,i=queue(),"",1
+	while i<=#str do
+		local c,c2 = sub(str,i,i),
+		sub(str,i+1,i+1)
+		if ops[c..c2] then
+			c=c..c2
+			i+=1
+		end
+		if str_contains(c,"{([")
+		or ops[c] then
+			if(#buf>0)tokens(buf) buf=""
+			if not ops[c] then
+				local close=brackets(sub(str,i))
+				c,i=sub(str,i,close),close+1
+			end
+			tokens(c)
+		else
+			buf=buf..c
+		end
+	end
+	if(#buf>0)tokens(buf)
+	for i=1,#tokens do
+		log("token "..i.."="..tokens:get(i))
+end
 --[[
 the reverse of str_to_val
 only needed for testing
@@ -1094,10 +1233,11 @@ end
 	remove and return the last value
 	in the queue
 --]]
-function queue:pop()
-	local first = self:get(1)
+function queue:pop(i)
+	i=i or 1
+	local val = self:get(i)
  if first then
-  for i = 2, #self do
+  for i = i+1, #self do
    self.values[i-1],
    self.values[i] = self:get(i),nil
   end
@@ -1680,6 +1820,15 @@ function _init()
 		del(pts,main_pt)
 	end)
 	local struct=str_to_table(level_structures)
+
+	local token_tests={
+		"1+1=2",
+		"1+(3*5+(6+7))-2=4..5+=7"
+	}
+	foreach(token_tests,function(test)
+		log("testing "..test)
+		tokenize(test)
+	end)
 end
 
 function _update()
