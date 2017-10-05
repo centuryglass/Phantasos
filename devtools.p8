@@ -429,7 +429,7 @@ strings: anything that doesn't
 fit in any other categories
 --]]
 function str_to_val(str)
-	if not(is_string(str))return str
+	if(not is_string(str))return str
 	local lastchar=sub(str,#str)
 	if lastchar == "}" then
 		return str_to_table(sub(str,2,#str-1))
@@ -438,9 +438,9 @@ function str_to_val(str)
 		for i=1,#str do
 			local c = sub(str,i,i)
 			if c=="(" then
-				return str_to_val(fn)(unpack(sub(str,i,#str-1)))
+				return str_to_val(val)(unpack(sub(str,i+1,#str-1)))
 			else
-				fn=fn..i
+				val=val..c
 			end
 		end
 	end
@@ -459,13 +459,14 @@ end
 
 function brackets(str)
 	local open,unclosed,substr =
-	sub(str,1,1),1,""
+	sub(str,1,1),0,""
 	local close = open=="{" and "}"
 	or open=="(" and ")"
 	or open=="[" and "]"
-	for i = 2,#str do
+	for i = 1,#str do
 		local c = sub(str,i,i)
 		unclosed += (c==open and 1 or c==close and -1 or 0)
+		log(c..":"..unclosed)
 		if(unclosed == 0) return i
 	end
 end
@@ -478,12 +479,18 @@ function priority(op)
 		["&"]=7,
 		["|"]=9
 	}
- return str_contains(op,"{(<")) and 0
-	or p_tbl[op]
-	or (str_contains(op,"<>.:") or op == "==") and 6
-	or str_contains(op,"=")) and 9
+ if str_contains(op,"{(<") then
+  return 0
+ end
+	if str_contains(op,"<>.:") 
+	or (op == "==") then
+		return 6
+	end
+	return p_tbl[op]
+	or str_contains(op,"=") and 9
 	or str_contains(op,"*/%") and 3
 	or str_contains(op,"+-") and 4
+	or 10
 end
 
 ops = {
@@ -571,7 +578,7 @@ ops = {
 }
 
 function tokenize(str)
-	if not(is_string(str))return str
+	if(not is_string(str))return str
 	local tokens,buf,i=queue(),"",1
 	while i<=#str do
 		local c,c2 = sub(str,i,i),
@@ -584,17 +591,20 @@ function tokenize(str)
 		or ops[c] then
 			if(#buf>0)tokens(buf) buf=""
 			if not ops[c] then
-				local close=brackets(sub(str,i))
-				c,i=sub(str,i,close),close+1
+				local close=i+brackets(sub(str,i))-1
+				c,i=sub(str,i,close),close
 			end
 			tokens(c)
 		else
 			buf=buf..c
 		end
+		i+=1
 	end
 	if(#buf>0)tokens(buf)
 	for i=1,#tokens do
-		log("token "..i.."="..tokens:get(i))
+		local token=tokens:get(i)
+		log("token "..i.."="..token..":"..priority(token))
+	end
 end
 --[[
 the reverse of str_to_val
@@ -642,14 +652,13 @@ str: formatted as "k1=v1,k2=v2"
 [tab]:optional destination table
 --]]
 function str_to_table(str,tab)
+	if(not is_string(str))return str
 	local i,buf,tab=
 	0,"",tab or {}
 	--using "null" to indicate that no
 	--value was found makes it possible
 	--to add nil and false to tables
 	local val,key="null"
-	log(str)
-	assert(is_string(str))
 	while i<=#str do
 		i+=1
 		local c = sub(str,i,i)
@@ -664,7 +673,7 @@ function str_to_table(str,tab)
 				local c2=sub(str,i2,i2)
 				to_close += (c2=="{" and 1 or c2=="}" and -1 or 0)
 				if to_close == 0 then
-					log("reading sub-table")
+					--log("reading sub-table")
 					val=str_to_table(sub(str,i+1,i2-1))
 					i=i2+1
 					break
