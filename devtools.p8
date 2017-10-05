@@ -616,10 +616,16 @@ function parse(str,tokens)
 		local op_index,pr,op=1,11
 		for i=1,#tokens do
 			local o2=tokens:get(i)
-			local p2=priority(o2)
+			local p2=priority(tokens:get(i))
 			if(p2<p)op,op_index,p=o2,i,p2
 		end
 		--parse functions/tables
+		if op == "," then
+			assert(op_index == 2)
+			local v=-tokens
+			tokens:pop()
+			return parse(v),parse(str,tokens)
+		end
 		if pr==0 then
 			local bracket_type,caller=
 			sub(op,1,1)
@@ -639,9 +645,17 @@ function parse(str,tokens)
 			or {parse(op)})
 		--one value operators
 		else if pr==2 then
+			local operand=tokens:pop(op_index+1)
+			tokens.values[op_index]=ops[op](operand)
+			--two value operatiors
 		else
+			local v2,v1=
+			tokens:pop(op_index+1),
+			tokens:pop(op_index-1)
+			tokens.values[op_index]=ops[op](v1,v2)
 		end
 	end
+	return str_to_val(-tokens)
 end
 
 --[[
@@ -1849,8 +1863,6 @@ function _init()
 		tab.messages=nil
 		return to_string(tab)
 	end
-	local tarr = {unpack"3,5,9"}
-	log(to_string(tarr))
 
 	log("potion=item.subclass")
 	log("\""..str_edit(potion).."\"")
@@ -1872,13 +1884,14 @@ function _init()
 	local struct=str_to_table(level_structures)
 
 	local token_tests={
-		"1+1=2",
-		"1+(3*5+(6+7))-2=4..5+=7"
+		"i=3*5",
+		"test_tbl={i+1,i+2,i..name}"
 	}
 	foreach(token_tests,function(test)
 		log("testing "..test)
-		tokenize(test)
+		parse(test)
 	end)
+	log(to_string(vars.test_tbl))
 end
 
 function _update()
