@@ -474,23 +474,24 @@ end
 function priority(op)
 	local p_tbl={
 		["^"]=1,
-		["!"]=2,
 		[".."]=5,
 		["&"]=7,
-		["|"]=9
+		["|"]=9,
+		[","]=10
 	}
  if str_contains(op,"{(<") then
   return 0
  end
-	if str_contains(op,"<>.:") 
+	if str_contains(op,"<>.:")
 	or (op == "==") then
 		return 6
 	end
 	return p_tbl[op]
 	or str_contains(op,"=") and 9
+	or str_contains(op,"!#") and 2
 	or str_contains(op,"*/%") and 3
 	or str_contains(op,"+-") and 4
-	or 10
+	or 11
 end
 
 ops = {
@@ -577,37 +578,74 @@ ops = {
 	end
 }
 
-function tokenize(str)
+function parse(str,tokens)
 	if(not is_string(str))return str
-	local tokens,buf,i=queue(),"",1
-	while i<=#str do
-		local c,c2 = sub(str,i,i),
-		sub(str,i+1,i+1)
-		if ops[c..c2] then
-			c=c..c2
+	local tokens,buf,i=
+	tokens or queue(),"",1
+	if #tokens==0 then
+		while i<=#str do
+			local c,c2 = sub(str,i,i),
+			sub(str,i+1,i+1)
+			if ops[c..c2] then
+				c=c..c2
+				i+=1
+			end
+			if str_contains(c,"{([")
+			or ops[c] then
+				if(#buf>0)tokens(buf) buf=""
+				if not ops[c] then
+					local close=i+brackets(sub(str,i))-1
+					c,i=sub(str,i,close),close
+				end
+				tokens(c)
+			else
+				buf=buf..c
+			end
 			i+=1
 		end
-		if str_contains(c,"{([")
-		or ops[c] then
-			if(#buf>0)tokens(buf) buf=""
-			if not ops[c] then
-				local close=i+brackets(sub(str,i))-1
-				c,i=sub(str,i,close),close
-			end
-			tokens(c)
-		else
-			buf=buf..c
-		end
-		i+=1
+		if(#buf>0)tokens(buf)
 	end
-	if(#buf>0)tokens(buf)
+	tokens:clear()
+	--[[
 	for i=1,#tokens do
 		local token=tokens:get(i)
 		log("token "..i.."="..token..":"..priority(token))
 	end
+	--]]
+	while #tokens>1 do
+		local op_index,pr,op=1,11
+		for i=1,#tokens do
+			local o2=tokens:get(i)
+			local p2=priority(o2)
+			if(p2<p)op,op_index,p=o2,i,p2
+		end
+		--parse functions/tables
+		if pr==0 then
+			local bracket_type,caller=
+			sub(op,1,1)
+			if i>1 and
+			priority(tokens:get(op_index-1)) == 10 then
+				op_index-=1
+				caller=parse(tokens:pop(op_index))
+			end
+			tokens.values[op_index]=
+			bracket_type=="(" and
+			(caller
+			and str_to_val(caller)(parse(op))
+			or parse(op)) or
+			bracket_type=="[" and str_to_val(caller)[parse(op)]
+			or (caller
+			and str_to_val(caller){parse(op)}
+			or {parse(op)})
+		--one value operators
+		else if pr==2 then
+		else
+		end
+	end
 end
+
 --[[
-the reverse of str_to_val
+the reverse of str_to_val,
 only needed for testing
 purposes
 --]]
@@ -1238,6 +1276,7 @@ function queue:get(i)
  if(i<=#self)return self.values[i]
 end
 
+
 --[[
 	remove and return the last value
 	in the queue
@@ -1810,6 +1849,8 @@ function _init()
 		tab.messages=nil
 		return to_string(tab)
 	end
+	local tarr = {unpack"3,5,9"}
+	log(to_string(tarr))
 
 	log("potion=item.subclass")
 	log("\""..str_edit(potion).."\"")
@@ -2264,4 +2305,3 @@ __music__
 00 41424304
 00 41424344
 00 41424344
-
