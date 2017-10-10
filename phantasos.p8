@@ -54,7 +54,7 @@ map characters to indices so
 strings can be loaded from memory.
 --]]
 allchars = "0123456789-.abcdefghijklmnopqrstuvwxyz,;_:(){}[]<>/?+=*|!#%&@$^"
-chartable={}
+chartable,classtable={},{}
 for i=1,#allchars do
 	local c,n=sub(allchars,i,i),i-1
 	chartable[n],chartable[c]=
@@ -553,7 +553,7 @@ function start_turn()
 					end
 					if(fn)fn(e,turns)
 					name_msg(e,sts.t)
-					self[s_name]=turns<0 and turns-1
+					e[s_name]=turns<0 and turns-1
 					if(turns==0)name_msg(e,sts.e)
 				end
 			end)
@@ -562,8 +562,6 @@ function start_turn()
 		end
 	end)
 end
-
---[[
 
 --[[
 handles all the results of using
@@ -601,7 +599,7 @@ end
 	object<x: return true if object
 		is type x
 --]]
-object,classtable={},{}
+object={}
 object.class={object}
 
 --[[
@@ -2880,8 +2878,8 @@ function _init()
 	title,--true
 	kills,--0
 	high_scores,--(0,0,0)
-	equip_types,--(weapon,armor,rings)
-	= queue(),queue(),
+	equip_types--(weapon,armor,rings)
+	=queue(),queue(),
 	rectangle()*16,
 	loading_ctrl,
 	rnd_pos(always_true),
@@ -3341,3 +3339,4 @@ __music__
 00 01004344
 00 41424344
 00 41424344
+
