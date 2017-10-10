@@ -43,21 +43,12 @@ end
 	--[[
 	######-data management-#########
 	--]]
-	
+
 	--reused whenever needed as
 	--callback functions
 	function always_true() return true end
 	function always_nil() end
 
---[[
-function table
-references to these functions
-can be parsed from strings
---]]
-fns={
-	always_true=always_true,
-	always_nil=always_nil
-}
 --[[
 map characters to indices so
 strings can be loaded from memory.
@@ -490,6 +481,33 @@ function set_redraw(f)
 	f or redraw)or f
 end
 
+--[[
+function table
+references to these functions
+can be parsed from strings
+--]]
+fns={
+	always_true=always_true,
+	always_nil=always_nil,
+	spec_fn=function(crt,t)
+		if(t==-3)name_msg(crt," is fading back.")
+		if t==0 and get_tile(crt.pos).solid then
+			name_msg(crt," is stuck in a wall!")
+			crt-=999
+		end
+	end,
+	psn_fn=function(crt,t)
+		crt-=1
+	end,
+	slp_fn=function(crt,t)
+		if crt==you then
+			ctrl= t==0 and default_ctrl
+			or no_ctrl
+		end
+	end
+}
+status=unpack"{sleep={s= fell asleep!,t= is fast asleep.,fn=slp_fn,e= woke up.},confusion={s= looks unsteady.e='s vision clears},spectral={s= can walk through walls.,fn=spec_fn,e= is solid again.},poison={s= looks sick.,t= is hurt by poison.,fn=psn_fn,e= looks healthier.},haste={s= speeds up.,e= slows down.,fn=haste_fn},blind={s= is blind!,e= can see again.},enlightened={s= can see everything.},tough={s= looks tougher.,e= looks vulnerable}}"
+
 --###-game turn management-####--
 
 --[[
@@ -500,9 +518,14 @@ return:true if a new turn was
 started.
 --]]
 function start_turn()
-	if(you.fast==1)you.fast=2 return
-	if(you.fast==2)you.fast=1
 	if(turn_running)return
+	if you.haste then
+		if you.t2 then
+			you.t2=false
+		else
+			you.t2=true return
+		end
+	end
 	turn_running = true
 	if num_creatures < max_creatures
 	then
@@ -521,6 +544,19 @@ function start_turn()
 	end
 	foreach_entity(function(e)
 		if e.take_turn and loop_le(e.turn,turn) then
+			foreach_pair(status,function(sts,s_name)
+				local turns,fn=e[s_name],sts.fn
+				if turns then
+					if turns > 0 then
+						name_msg(e,sts.s)
+						turns*=-1
+					end
+					if(fn)fn(e,turns)
+					name_msg(e,sts.t)
+					self[s_name]=turns<0 and turns-1
+					if(turns==0)name_msg(e,sts.e)
+				end
+			end)
 			e:take_turn()
 			e.turn=loop_add(turn,1)
 		end
@@ -528,76 +564,6 @@ function start_turn()
 end
 
 --[[
-run a scheduled action on turn start
-
-t: the starting turn
-n: number of turns to repeat
-fn(): action to run
---]]
-function turn_routine(t,n,fn)
-	turn_routines(cocreate(function()
-		while turn != loop_add(t,n) and
-		n!=0 do
-			if(loop_le(t,turn)) fn() n-=1
-			yield()
-		end
-	end))
-end
-
---[[
-apply a status effect
-
-target:the affected creature
-duration:number of turns the
-	effect will last
-[on_turn]:callback function to
-	run each turn
-[on_end]:callback function to run
-	when the effect finishes
-[start_msg,turn_msg,end_msg]:
-	messages to display at different
-	times if the affected creature
-	is visible.
---]]
-function status_effect(target,duration,
-on_turn,on_end,
-start_msg,turn_msg,end_msg)
-	if(visible(target))name_msg(target,start_msg)
-	turn_routine(turn,duration,function()
-		if(target.hp<=0)return
-		if(visible(target))name_msg(target,turn_msg)
-		--log("effect on "..turn..", duration "..duration)
-		on_turn()
-	end)
-	turn_routine(loop_add(turn,duration),1,function()
-		if(target.hp<=0)return
-		if(visible(target))name_msg(target,end_msg)
-		--log("effect over on "..turn)
-		on_end()
-	end)
-end
-
---reused status effects
-function poison(target)
-	status_effect(target,rndint(9,5),
-		function() target-=1 end,nil,
-		nil," is hurt by poison.",
-		" recovers from poison.")
-end
-
-function sleep(target)
-	if(target==you)ctrl=no_ctrl
-	target.sleeping=true
-	status_effect(target,rndint(10,8),
-			function() target+=1 end,
-			function()
-				if(target==you)ctrl=default_ctrl
-				target.sleeping=false
-			end,
-			" fell asleep.",
-			" is fast asleep.",
-			" woke up!.")
-end
 
 --[[
 handles all the results of using
@@ -1585,6 +1551,7 @@ end
 	and unobstructed
 --]]
 function entity:can_see(pos)
+	if(self.blind)return
 	local t,p = get_tile(pos),self.pos
 	return pos==p or
 	(p:dist(pos)<=self.sight_rad
@@ -1772,14 +1739,14 @@ function potion:on_use(c)
 	if(ti == 1)c.hp=c.hp_max
 	--poison: take damage for several
 	--turns
-	if(ti == 3)poison(c)
+	if(ti == 3)c.poison=rndint(9,5)
 	--experience boost
 	if(ti == 4)c.exp=flr((c.exp+10)*1.5)
 	--sleep: prevents action and
 	--restore 1 hp per turn
-	if(ti == 5)sleep(c)
+	if(ti == 5)c.sleep=rndint(15,8)
 	--amnesia: forget the level layout
-	--makes enemies forget target 
+	--makes enemies forget target
 	--and path
 	if ti == 6 then
 		copy_all("target=nil,path=nil",c)
@@ -1793,45 +1760,13 @@ function potion:on_use(c)
 	--spectral: walk through solid
 	--objects. take care not to be
 	--in a wall when it wears off
-	if ti == 9 then
-		c.spectral = true
-		local start,duration =
-		turn,rndint(20,10)
-		status_effect(c,duration,
-			function()
-				if(turn ==loop_add(start,duration-3))name_msg(c," is fading back.")
-			end,
-			function()
-				c.spectral = nil
-				if get_tile(c.pos).solid then
-					name_msg(c," is stuck in a wall!")
-					c-=999
-				end
-			end,
-			" can walk through walls.",nil,
-			" is solid again.")
-	end
+	if(ti == 9)c.spectral = rndint(20,10)
 	--invincibility: block attack
 	--damage for a few turns
-	if ti == 10 then
-		c.ac+=999
-		status_effect(c,rndint(7,3),
-		nil,function() c.ac-=999 end,
-		" is invincible!",nil," looks vulnerable.")
-	end
+	if(ti == 10)c.tough=rndint(7,3)
 	--blindness
-	if ti == 11 then
-		c.can_see=always_nil
-		status_effect(c,rndint(12,8),
-		nil,function() c.can_see=nil end,
-		" is blind!",nil," can see again.")
-	end
-	if ti == 12 then
-		c.fast=1
-		status_effect(c,rndint(20,4),
-		nil,function() c.fast=nil end,
-		" speeds up.",nil," slows down.")
-	end
+	if(ti == 11)c.blind=rndint(12,8)
+	if(ti == 12)c.haste=rndint(20,4)
 end
 
 --[[
@@ -1868,12 +1803,7 @@ function mushroom:on_use(c)
 	if(ti == 1)c+=10
 	if(ti == 2)c-=1
 	if(ti == 3)c.hp=1
-	if ti == 4 then
-		c.confused = true
-		status_effect(c,rndint(15,4),
-		nil,function() c.confused=false end,
-		" looks unsteady.",nil,"'s vision clears.")
-	end
+	if(ti == 4)c.confused =rndint(15,4)
 end
 
 --[[
@@ -1919,7 +1849,7 @@ function equipment:equip(c)
 	if(equipped)equipped:remove()
 	foreach_pair(self.bonuses,
 	function(v,k)
-		if type(v) == "number" then 
+		if type(v) == "number" then
 			c[k]+=v
 		else
 			c[k]=v
@@ -1935,7 +1865,7 @@ function equipment:remove()
 	holder.equipped[self.equip_slot]=nil
 	foreach_pair(self.bonuses,
 	function(v,k)
-		if type(v) == number then 
+		if type(v) == number then
 			holder[k]-=v
 		else
 			holder[k]=holder:class()[k]
@@ -2107,7 +2037,7 @@ function creature:take_turn(a2)
 		if(not(self.path or guard_pos))d=rndint(3,0)
 		self:move(d)
 	end
-	if(self.fast and not a2)self:take_turn(true)
+	if(self.haste and not a2)self:take_turn(true)
 end
 --[[
 creatures will attack eachother if
@@ -2936,7 +2866,7 @@ end
 function _init()
 	cartdata"phantasos"
 	level_init()
-	update_routines,turn_routines,draw_routines,
+	update_routines,draw_routines,
 	screen,
 	ctrl,
 	build_pos,
@@ -2950,8 +2880,8 @@ function _init()
 	title,--true
 	kills,--0
 	high_scores,--(0,0,0)
-	equip_types--(weapon,armor,rings)
-	= queue(),queue(),queue(),
+	equip_types,--(weapon,armor,rings)
+	= queue(),queue(),
 	rectangle()*16,
 	loading_ctrl,
 	rnd_pos(always_true),
@@ -2978,7 +2908,6 @@ function _update()
 		then return
 	end
 	if turn_running then--finish turn
-		run_coroutines(turn_routines,true)
 		turn=loop_add(turn,1)
 		if you.hp <=0 then
 			gameover,reveal_all,ctrl=
@@ -3412,4 +3341,3 @@ __music__
 00 01004344
 00 41424344
 00 41424344
-

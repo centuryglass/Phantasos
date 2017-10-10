@@ -60,6 +60,6 @@ foreach_pair(status,function(sts,s_name)
 		if(fn)fn(self,turns)
 		name_msg(self,sts.t)
 		self[s_name]=turns<0 and turns-1
-		if(turns==-1)name_msg(self,sts.e)
+		if(turns==0)name_msg(self,sts.e)
 	end
 end)
