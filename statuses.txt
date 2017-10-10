@@ -1,3 +1,15 @@
+spec_fn=function(crt,t)
+	if(t==3)name_msg(crt," is fading back.")
+	if t==0 and get_tile(crt.pos).solid then
+		name_msg(crt," is stuck in a wall!")
+		crt-=999
+	end
+end
+
+psn_fn=function(crt,t)
+	crt-=1
+end
+
 status={
 	sleep={
 		s= fell asleep!,
@@ -10,11 +22,13 @@ status={
 	},
 	spectral={
 		s= can walk through walls.,
+		fn=spec_fn,
 		e= is solid again.
 	},
 	poison={
 		s= looks sick.,
 		t= is hurt by poison.,
+		fn=psn_fn,
 		e= looks healthier.
 	},
 	haste={
@@ -34,4 +48,18 @@ status={
 	}
 }
 
---
+--status effect code
+--self=creature
+foreach_pair(status,function(sts,s_name)
+	local turns,fn=self[s_name],sts.fn
+	if turns then
+		if turns > 0 then
+			name_msg(self,sts.s)
+			turns*=-1
+		end
+		if(fn)fn(self,turns)
+		name_msg(self,sts.t)
+		self[s_name]=turns<0 and turns-1
+		if(turns==-1)name_msg(self,sts.e)
+	end
+end)

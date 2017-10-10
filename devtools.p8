@@ -266,9 +266,12 @@ end
 		always_true=always_true,
 		always_nil=always_nil,
 		sspr=sspr,
+		spr=spr,
 		print=print,
 		add=add,
 		flr=flr,
+		max=max,
+		sub=sub,
 		str_contains=str_contains,
 		draw_border=draw_border
 	}
@@ -324,7 +327,6 @@ return: address of the first byte
 	str
 --]]
 function str_to_mem(str,addr,strname)
-	local last_addr
 	for i=1,#str do
 		last_addr=i+addr-1
 		local byte = sub(str,i,i)
@@ -344,7 +346,10 @@ end
 	false positives
 	--]]
 function is_numstr(str)
-	if is_string(str) and #str>0 then
+	if is_string(str) and #str>0
+	and #str<6 and str != ".." then
+		log(str)
+		if(sub(str,1,2)=="0x" and #str>2)return true
 		for i=1,#str do
 			local char = chartable[sub(str,i,i)]
 			if(not char or char>11)return
@@ -422,7 +427,8 @@ function str_to_val(str)
 		return str_to_table(sub(str,2,#str-1))
 	end
 
-	if(is_numstr(str)) str+=0
+	--str=str_replace(str,"$","")
+	if(is_numstr(str))return str+0
 	if(str == "false")return false
 	if(str == "nil")return
 	return (str == "true") and true
@@ -434,17 +440,20 @@ end
 
 
 function brackets(str)
-	local open,unclosed,substr =
-	sub(str,1,1),0,""
+	local open,unclosed,substr,esc=
+	sub(str,1,1),0,"",false
 	local close = open=="{" and "}"
 	or open=="(" and ")"
 	or open=="[" and "]"
+	if(not close)return 1
 	for i = 1,#str do
 		local c = sub(str,i,i)
-		unclosed += (c==open and 1 or c==close and -1 or 0)
+		if(not esc)unclosed += (c==open and 1 or c==close and -1 or 0)
 		--log(c..":"..unclosed)
+		esc= c=="$"
 		if(unclosed == 0) return i
 	end
+	return 1
 end
 
 function priority(op)
@@ -453,12 +462,14 @@ function priority(op)
 		[".."]=6,
 		["&"]=8,
 		["|"]=10,
-		[","]=1
+		[","]=11,
+		[":"]=0
 	}
- if str_contains(op,"{([") then
+	if(not is_string(op))return 12
+ if str_contains(sub(op,1,1),"{([") then
   return 0
  end
-	if str_contains(op,"<>.:")
+	if str_contains(op,"<>")
 	or (op == "==") then
 		return 7
 	end
@@ -551,85 +562,100 @@ ops = {
 	end
 }
 
-function parse(str,tokens)
+
+function tokenize(str)
 	if(not is_string(str))return str
 	local tokens,buf,i,esc=
-	tokens or queue(),"",1
-	if #tokens==0 then
-		while i<=#str do
-			local c,c2 = sub(str,i,i),
-			sub(str,i+1,i+1)
-			if not esc and ops[c..c2] then
-				c=c..c2
-				i+=1
-			end
-			if str_contains(c,"{([")
-			or ops[c] then
-				if(#buf>0)tokens(buf) buf=""
-				if not ops[c] then
-					local close=i+brackets(sub(str,i))-1
-					c,i=sub(str,i,close),close
-				end
-				tokens(c)
-			elseif c=="$" then
-				esc=true
-			else
-				buf,esc=buf..c
-			end
+	queue(),"",1,true
+	while i<=#str do
+		local c,c2 = sub(str,i,i),
+		sub(str,i+1,i+1)
+		if ops[c..c2] then
+			c=c..c2
 			i+=1
 		end
-		if(#buf>0)tokens(buf)
-	end
-	--tokens:clear()
-
-	while #tokens>1 do
-	---[[
-		local tlist=""	
-		for i=1,#tokens do
-			local token=tokens:get(i)
-			tlist=tlist.."<"..to_string(token)..">"
+		if	str_contains(c,"{([") then
+			local close=i+brackets(sub(str,i))-1
+			c,i=sub(str,i,close),close
+			--log("c="..c)
 		end
-		log(tlist)
-		--]]
+		if not esc 
+		and (ops[c] or #c>1 or c==":") then
+			if(#buf>0)tokens(buf) buf=""
+			tokens(c)
+		else
+			buf,esc=buf..c,c=="$"
+		end
+		i+=1
+	end
+	if(#buf>0)tokens(buf)
+	return tokens
+end
+
+function parse(tokens)
+	if is_string(tokens) then 
+		tokens=tokenize(tokens)
+	end
+	if(not (queue<tokens))return tokens
+	while #tokens>1 do
 		local op_index,pr,op=1,13
 		for i=1,#tokens do
 			local o2=tokens:get(i)
 			local p2=priority(o2)
-			--log(to_string(o2)..":"..p2)
 			if(p2<pr)op,op_index,pr=o2,i,p2
 		end
-		--log("op="..op_index.."("..op..")")
-		--parse functions/tables
-		if op == "," then
-			--assert(op_index == 2)
-			local v=-tokens
-			tokens:pop()
-			return parse(v),parse(str,tokens)
+		--[[
+		local tlist=""	
+		for i=1,#tokens do
+			log(tlist)
+			tlist=""
+			local token=tokens:get(i)
+			if(op_index==i)tlist=tlist.."|"
+			tlist=tlist.."<"..to_string(token)..">"
+			
+			if(op_index==i)tlist=tlist.."|"
 		end
-		if pr==0 then
+		log(tlist)
+		--]]
+		--log("op="..op_index.."<"..op..">")
+		--parse functions/tables
+		if op == ":" then
+			local fn,args,caller=
+			tokens:pop(op_index+1),
+			tokens:pop(op_index+1),
+			parse(tokens:pop(op_index-1))
+			log(caller)
+			tokens.values[op_index-1]=
+			caller[fn](caller,parse(args))
+		elseif op == "," then
+			local v1=-tokens
+			tokens:pop()
+			return str_to_val(v1),parse(tokens)
+		elseif pr==0 then
 			local bracket_type,op,caller=
 			sub(op,1,1),
 			sub(op,2,#op-1)
-			if i>1 and
+			if op_index>1 and
 			priority(tokens:get(op_index-1)) == 12 then
 				op_index-=1
 				caller=parse(tokens:pop(op_index))
 			end
+			if(is_string(caller))log(caller)
 			tokens.values[op_index]=
 			bracket_type=="(" and
 			(caller
-			and str_to_val(caller)(parse(op))
+			and caller(parse(op))
 			or parse(op)) or
-			bracket_type=="[" and str_to_val(caller)[parse(op)]
+			bracket_type=="[" and caller[parse(op)]
 			or (caller
-			and str_to_val(caller){parse(op)}
+			and caller{parse(op)}
 			or {parse(op)})
 		--one value operators
 		elseif pr==2 then
 			local operand=tokens:pop(op_index+1)
 			tokens.values[op_index]=ops[op](operand)
 			--two value operatiors
-		else
+		elseif ops[op]then
 			--log("op="..tokens:get(op_index))
 			local v1=tokens:pop(op_index-1)
 			if(pr!=10)v1=parse(v1)
@@ -637,6 +663,7 @@ function parse(str,tokens)
 			ops[op](v1,parse(tokens:pop(op_index)))
 		end
 	end
+	--if(tokens:get(1))log("last="..tokens:get(1))
 	return str_to_val(-tokens)
 end
 
@@ -733,16 +760,6 @@ function str_to_table(str,tab)
 	return tab
 end
 
-
---[[
-convert hex strings to number data
-hexstr: a hex string, without
-	the '0x' prefix
---]]
-function hexstr_to_num(hexstr)
-	return ("0x"..hexstr)+0
-end
-
 --[[
 extract a series of points
 stored as a hex string
@@ -752,15 +769,10 @@ function to apply to each point
 function hex_to_pts(hexstr,transform)
 	transform=transform or
 	function(p) return p end
-	local pts = {}
-	function hexpop()
-		local num=
-		hexstr_to_num(sub(hexstr,1,1))
-		hexstr = sub(hexstr,2)
-		return num
-	end
-	while #hexstr > 1 do
-		local pt=transform(point(hexpop(),hexpop()))
+	local pts={}
+	--assert(#hexstr%2==0)
+	for i=1,#hexstr-1,2 do
+		local pt=transform(parse("point(0x"..sub(hexstr,i,i)..",0x"..sub(hexstr,i+1,i+1)..")"))
 		if pt.x<16 and pt.y<16 then
 			add(pts,pt)
 		elseif #pts==0
@@ -769,7 +781,6 @@ function hex_to_pts(hexstr,transform)
 	end
 	return pts
 end
-
 --[[
 load a table of point lists from
 a string
@@ -820,7 +831,6 @@ sure the token tradeoff is worth
 it yet.
 --]]
 function quarter(ptlist,name)
-	--log(name.."=")
 	local str=""
 	foreach(ptlist,function(pts)
 		if(pts[1].x <=8 and pts[1].y <=8)str=str..pts_to_hex(pts)..","
@@ -1069,35 +1079,7 @@ function num_to_hexstr(num)
 		n = flr(n/16)
 	end
 	str="0x"..str
-	assert(num==(str+0))
 	return str
-end
-
---[[
-extract a series of points
-stored as a hex string
-transform:optional point transformation
---]]
-function hex_to_pts(hexstr,transform)
-	transform=transform or
-	function(p) return p end
-	local pts = {}
-	function hexpop()
-		assert(is_string(hexstr))
-		local num=
-		("0x"..sub(hexstr,1,1))+0
-		hexstr = sub(hexstr,2)
-		return num
-	end
-	while #hexstr > 0 do
-		local newpt=transform(point(hexpop(),hexpop()))
-		if newpt.x <16 and newpt.y<16 then
-			add(pts,newpt)
-		elseif #pts==0
-			then return
-		end
-	end
-	return pts
 end
 
 --[[
@@ -1162,6 +1144,7 @@ function object:subclass(params)
 		end,
 		__lt=function(this,x)
 			return is_table(x)
+			and x.classes
 			and contains(x.classes,this)
 		end
 	}
@@ -1248,7 +1231,7 @@ end
 add v to the front of the queue
 --]]
 function queue:push(v)
- if(v)self.length +=1 self.values[#self] = v
+ self.length +=1 self.values[#self] = v
 end
 
 --[[
@@ -1266,8 +1249,8 @@ end
 --]]
 function queue:pop(i)
 	i=i or 1
-	local val = self:get(i)
- if val then
+	if i<=#self then
+		local val = self:get(i)
   for i2 = i+1, #self do
    self.values[i2-1],
    self.values[i2] = self:get(i2),nil
@@ -1640,12 +1623,6 @@ function rectangle:p2()
 	return point(self.w,self.h)+self
 end
 
---[[
-function rectangle:xywh()
-	return self.x,self.y,self.w,self.h
-end
---]]
-
 function rectangle:xy1xy2()
 	return self.x,self.y,
 	self:p2():get_xy()
@@ -1716,13 +1693,9 @@ function menu:draw()
 	6*#self+12
 	draw_border(pos)
 	for i=1,#self do
-		copy_all({
-		i=i,
-		pos=pos,
-		self=self},vars)
-		parse"dp=point(2,6*i+2)+pos"
-		if(i==self.index)spr(31,vars.dp:get_xy())
-		parse"print(self[get](self,i)[name],dp[x]+9,dp[y],10)"
+		dp=point(2,6*i+2)+pos
+		if(i==self.index)spr(31,dp:get_xy())
+		print(self:get(i).name,dp.x+9,dp.y,10)
 	end
 end
 
@@ -1900,7 +1873,6 @@ function draw_mapping_visual()
 	for i=1,#draw_tbl do
 		local pts = draw_tbl[i]
 		local pt=pts[1]
-		--spr(53,(pt*8):get_xy())
 		if ipt==pt then
 			blocked[#pt] = 1
 		end
@@ -1913,21 +1885,22 @@ function draw_mapping_visual()
 			end
 		end
 	end
-	spr(128,64,64)
+	parse"spr(128,64,64)"
 	if(index>0)print(index.."/"..#draw_tbl..":"..#draw_tbl[index][1],1,122,8)
 end
 
 function draw_los_visual()
 	index%=255
-	local pt= point(index%16,flr(index/16))
-	if los_tbl[#pt] then
-		spr(59,(pt*8):get_xy())
-		foreach(los_tbl[#pt],function(p)
-			spr(60,(p*8):get_xy())
+	vars.index=index
+	parse"pt=point(index%16,flr(index/16))"
+	if los_tbl[#vars.pt] then
+		parse"spr(59,(pt*8):get_xy())"
+		foreach(los_tbl[#vars.pt],function(p)
+			vars.p=p
+			parse"spr(60,(p*8):get_xy())"
 		end)
 	end
-	print(index.."/255:"..#pt,1,122,8)
-	spr(128,64,64)
+	parse"print(index..$/255..#pt,1,122,8),spr(128,64,64)"
 end
 
 function draw_sprite_preview()
@@ -1952,9 +1925,7 @@ function _draw()
 	cls()
 	run_coroutines(draw_routines,true)
 	if cart_state=="none" then
-		
-		parse"draw_border(rectangle(14,38,104,37)),print(devtools,52,62,10),print(x$:open menu,44,69,10),sspr(64,64,64,16,14,40,100,25)"
-		--sspr(unpack"64,64,64,16,14,40,100,25")
+		parse"draw_border(rectangle(14,38,104,37)),print(devtools,52,62,10),print(x to open menu,44,69,10),sspr(64,64,64,16,14,40,100,25)"
 	elseif cart_state=="mem_ops" then
 		draw_mem_info()
 	elseif cart_state=="draw_testing" then
@@ -1969,32 +1940,6 @@ function _draw()
 	function(m)m:draw()end)
 	if(active_menu)active_menu:draw()
 end
-
-
---[[
---hex sorting
-	local hex=""
-	foreach(los_array,
-	function(los_pt)
-		local sorted={}
-		add(sorted,los_pt[1])
-		del(los_pt,sorted[1])
-		while #los_pt>0 do
-			local closest
-			local cdist = 999
-			foreach(los_pt,function(p)
-				local pdist=point(8,8):exact_distance(p)
-				if(pdist < cdist) closest,cdist=p,pdist
-			end)
-			add(sorted,closest)
-			del(los_pt,closest)
-		end
-		if(#hex > 0)hex = hex..","
-		hex=hex..pts_to_hex(sorted)
-	end)
-	log(hex)
-
---]]
 __gfx__
 12022201120220311202220111111111555155550000000000000000120222010122210000000000000000000000000000000000000000000000000000000000
 212002201c1020312120022015551111511113350222200005555550212000201200021000000000000000000000000000000000000000000000000000000000
