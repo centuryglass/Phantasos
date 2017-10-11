@@ -506,7 +506,7 @@ fns={
 		end
 	end
 }
-status=unpack"{sleep={s= fell asleep!,t= is fast asleep.,fn=slp_fn,e= woke up.},confusion={s= looks unsteady.e='s vision clears},spectral={s= can walk through walls.,fn=spec_fn,e= is solid again.},poison={s= looks sick.,t= is hurt by poison.,fn=psn_fn,e= looks healthier.},haste={s= speeds up.,e= slows down.,fn=haste_fn},blind={s= is blind!,e= can see again.},enlightened={s= can see everything.},tough={s= looks tougher.,e= looks vulnerable}}"
+status=unpack"{sleep={s= fell asleep!,t= is fast asleep.,fn=slp_fn,e= woke up.},confused={s= looks unsteady.e='s vision clears},spectral={s= can walk through walls.,fn=spec_fn,e= is solid again.},poison={s= looks sick.,t= is hurt by poison.,fn=psn_fn,e= looks healthier.},haste={s= speeds up.,e= slows down.},blind={s= is blind!,e= can see again.},enlightened={s= can see everything.},tough={s= looks tougher.,e= looks vulnerable}}"
 
 --###-game turn management-####--
 
@@ -544,16 +544,19 @@ function start_turn()
 	end
 	foreach_entity(function(e)
 		if e.take_turn and loop_le(e.turn,turn) then
+			if(e==you)pstat=""
 			foreach_pair(status,function(sts,s_name)
 				local turns,fn=e[s_name],sts.fn
 				if turns then
+					log(e.name..":"..s_name.."-"..turns)
+					if(e==you)pstat=pstat.." "..sub(s_name,1,3).."="..turn
 					if turns > 0 then
 						name_msg(e,sts.s)
 						turns*=-1
 					end
 					if(fn)fn(e,turns)
 					name_msg(e,sts.t)
-					e[s_name]=turns<0 and turns-1
+					e[s_name]=turns<0 and turns+1
 					if(turns==0)name_msg(e,sts.e)
 				end
 			end)
@@ -1549,11 +1552,11 @@ end
 	and unobstructed
 --]]
 function entity:can_see(pos)
-	if(self.blind)return
 	local t,p = get_tile(pos),self.pos
 	return pos==p or
 	(p:dist(pos)<=self.sight_rad
-	or t.lights)and los(p,pos)
+	or t.lights and not self.blind)
+	and los(p,pos)
 end
 
 --[[
@@ -1714,6 +1717,7 @@ function color_coded_itm:use(c)
 		function update_names(i)
 			if(i.name==name)i.name=real_name
 		end
+		log("id on type "..ti)
 		update_names(self.types[ti])
 		foreach_entity(function(e)
 			update_names(e)
@@ -1728,43 +1732,45 @@ function color_coded_itm:use(c)
 end
 
 potion=color_coded_itm:subclass
-"flr_mult=3,sprite=65,throw_sfx=7,use_sfx=4,classname=potion,types={{r_name=healing,use_msg=you are healed,ti=1},{r_name=poison,use_msg=you feel sick,ti=3},{r_name=wisdom,use_msg=you feel more experienced,ti=4},{r_name=sleep,use_msg=you fell asleep,ti=5},{r_name=lethe,use_msg=where are you?,ti=6},{r_name=water,use_msg=refreshing!,ti=7},{r_name=juice,use_msg=yum,ti=8},{r_name=spectral,use_msg=you feel ghostly,ti=9},{r_name=toughness,use_msg=nothing can hurt you now!,ti=10},{r_name=blindness,use_msg=who turned out the lights?,ti=11},{r_name=speed,use_msg=the world slows down.,ti=12}},colors={1=viscous,2=fizzing,3=grassy,4=umber,5=ashen,6=smoking,7=milky,8=bloody,9=orange,10=glowing,11=lime,12=sky,13=reeking,14=fragrant,15=bland,0=murky}"
+"flr_mult=3,sprite=65,throw_sfx=7,use_sfx=4,classname=potion,types={{r_name=healing,use_msg=you are healed,ti=1},{r_name=poison,use_msg=you feel sick,ti=2},{r_name=wisdom,use_msg=you feel more experienced,ti=3},{r_name=sleep,use_msg=you fell asleep,ti=4},{r_name=lethe,use_msg=where are you?,ti=5},{r_name=water,use_msg=refreshing!,ti=6},{r_name=juice,use_msg=yum,ti=7},{r_name=spectral,use_msg=you feel ghostly,ti=8},{r_name=toughness,use_msg=nothing can hurt you now!,ti=9},{r_name=blindness,use_msg=who turned out the lights?,ti=10},{r_name=speed,use_msg=the world slows down.,ti=11}},colors={1=viscous,2=fizzing,3=grassy,4=umber,5=ashen,6=smoking,7=milky,8=bloody,9=orange,10=glowing,11=lime,12=sky,13=reeking,14=fragrant,15=bland,0=murky}"
 potion:classgen()
 function potion:on_use(c)
 	local ti,is_player=
 	self.ti,c==you
 	--healing: restore max hp
-	if(ti == 1)c.hp=c.hp_max
+	if(ti == 1)c.hp,c.poison,c.confused=c.hp_max 
 	--poison: take damage for several
 	--turns
-	if(ti == 3)c.poison=rndint(9,5)
+	if(ti == 2)c.poison=rndint(9,5)
 	--experience boost
-	if(ti == 4)c.exp=flr((c.exp+10)*1.5)
+	if(ti == 3)c.exp=flr((c.exp+10)*1.5)
 	--sleep: prevents action and
 	--restore 1 hp per turn
-	if(ti == 5)c.sleep=rndint(15,8)
+	if(ti == 4)c.sleep=rndint(15,8)
 	--amnesia: forget the level layout
 	--makes enemies forget target
 	--and path
-	if ti == 6 then
+	if ti == 5 then
 		copy_all("target=nil,path=nil",c)
-		foreach_tile(function(p,t)
-			t.seen = nil
-		end)
+		if c==you then
+			foreach_tile(function(p,t)
+				t.seen = nil
+			end)
+		end
 	end
-	--7:water. does nothing
+	--6:water. does nothing
 	--juice: slight hp restoration
-	if(ti == 8)c+=2
+	if(ti == 7)c+=2
 	--spectral: walk through solid
 	--objects. take care not to be
 	--in a wall when it wears off
-	if(ti == 9)c.spectral = rndint(20,10)
+	if(ti == 8)c.spectral = rndint(20,10)
 	--invincibility: block attack
 	--damage for a few turns
-	if(ti == 10)c.tough=rndint(7,3)
+	if(ti == 9)c.tough=rndint(7,3)
 	--blindness
-	if(ti == 11)c.blind=rndint(12,8)
-	if(ti == 12)c.haste=rndint(20,4)
+	if(ti == 10)c.blind=rndint(12,8)
+	if(ti == 11)c.haste=rndint(20,4)
 end
 
 --[[
@@ -1801,7 +1807,7 @@ function mushroom:on_use(c)
 	if(ti == 1)c+=10
 	if(ti == 2)c-=1
 	if(ti == 3)c.hp=1
-	if(ti == 4)c.confused =rndint(15,4)
+	if(ti == 4)c.confused=rndint(15,4)
 end
 
 --[[
@@ -2204,7 +2210,7 @@ end
 
 --player class
 player = creature:subclass
-"classname=player,name=rogue,sprite=128,hp_max=10,hitrate=85,min_dmg=1,max_dmg=5,take_turn=always_nil,item_table={bread=1000,apple=800,meat=200,torch=1000,potion=500,scroll=5000}"
+"classname=player,name=rogue,sprite=128,hp_max=10,hitrate=85,min_dmg=1,max_dmg=5,take_turn=always_nil,item_table={bread=1000,apple=800,meat=200,torch=1000,potion=5000,scroll=500}"
 
 function player:move(d)
 	if(not turn_running) creature.move(self,d)
@@ -2669,6 +2675,11 @@ function()
 end)
 --]]
 
+main_menu:add("give potion",
+function()
+	potion:new(you)
+end)
+
 inventory=menu()
 function inventory:update()
 	self.index = 1
@@ -2776,6 +2787,7 @@ function stats:update()
 	for i=1,#titles do
 		self:add(titles[i]..vals[i],always_nil)
 	end
+	if(pstat)self:add(pstat,always_nil)
 end
 
 
@@ -2974,7 +2986,7 @@ function _draw()
 			or t < void
 			or (you.pos:dist(abs_pos)
 			> you.sight_rad and not t.lights)
-			or you.can_see == always_nil) then
+			or you.blind) then
 				t.seen=true
 				if not you.confused then
 					pal()
