@@ -1,121 +1,1228 @@
-id on type 2
-rogue:poison-9
-rogue:poison--8
-rogue:poison--7
-rogue:poison--6
-rogue:poison--5
-rogue:poison--4
-rogue:poison--3
-rogue:poison--2
-rogue:poison--1
-rogue:poison-0
-rogue:poison-6
-id on type 10
-rogue:poison--5
-rogue:blind-12
-id on type 6
-rogue:poison--4
-rogue:blind--11
-rogue:poison--3
-rogue:blind--10
-id on type 8
-rogue:poison--2
-rogue:spectral-20
-rogue:blind--9
-id on type 3
-rogue:poison--1
-rogue:spectral--19
-rogue:blind--8
-id on type 7
-rogue:poison-0
-rogue:spectral--18
-rogue:blind--7
-id on type 11
-rogue:spectral--17
-rogue:blind--6
-rogue:haste-19
-id on type 5
-rogue:spectral--16
-rogue:blind--5
-rogue:haste--18
-id on type 4
-rogue:spectral--15
-rogue:blind--4
-rogue:sleep-12
-rogue:haste--17
-rogue:spectral--14
-rogue:blind--3
-rogue:sleep--11
-rogue:haste--16
-rogue:spectral--13
-rogue:blind--2
-rogue:sleep--10
-rogue:haste--15
-rogue:spectral--12
-rogue:blind--1
-rogue:sleep--9
-rogue:haste--14
-rogue:spectral--11
-rogue:blind-0
-rogue:sleep--8
-rogue:haste--13
-rogue:spectral--10
-rogue:sleep--7
-rogue:haste--12
-rogue:spectral--9
-rogue:sleep--6
-rogue:haste--11
-rogue:spectral--8
-rogue:sleep--5
-rogue:haste--10
-rogue:spectral--7
-rogue:sleep--4
-rogue:haste--9
-rogue:spectral--6
-rogue:sleep--3
-rogue:haste--8
-rogue:spectral--5
-rogue:sleep--2
-rogue:haste--7
-rogue:spectral--4
-rogue:sleep--1
-rogue:haste--6
-rogue:spectral--3
-rogue:sleep-0
-rogue:haste--5
-rogue:spectral--2
-rogue:haste--4
-rogue:spectral--1
-rogue:haste--3
-rogue:spectral-0
-rogue:haste--2
-rogue:haste--1
-id on type 1
-rogue:haste-0
-rogue:haste-12
-rogue:haste--11
-rogue:haste--10
-rogue:haste--9
-rogue:haste--8
-rogue:haste--7
-rogue:haste--6
-rogue:haste--5
-rogue:haste--4
-rogue:haste--3
-rogue:haste--2
-rogue:haste--1
-rogue:haste-0
-id on type 4
-id on type 4
-rogue:confused-11
-rogue:confused--10
-rogue:confused--9
-rogue:confused--8
-rogue:confused--7
-rogue:confused--6
-rogue:confused--5
-rogue:confused--4
-rogue:confused--3
-rogue:confused--2
-rogue:confused--1
-rogue:confused-0
+
+level 1
+structures:
+structure 1:1
+structure 3:1
+structure 8:1
+structure 9:2
+entities:
+statue:4
+player:1
+torch:28
+rat:6
+mushroom:12
+potion:1
+leather_armor:1
+
+level 2
+structures:
+structure 1:1
+structure 3:3
+structure 4:1
+structure 7:1
+structure 9:2
+entities:
+mushroom:9
+rat:3
+bread:1
+knife:3
+statue:4
+tomahawk:1
+torch:40
+kobold:3
+player:1
+
+level 3
+structures:
+structure 1:1
+structure 3:1
+structure 4:1
+structure 5:1
+structure 9:2
+entities:
+mushroom:7
+player:1
+potion:2
+rat:2
+bread:1
+statue:3
+knife:2
+watcher:1
+torch:33
+kobold:3
+ring:1
+
+level 4
+structures:
+structure 1:1
+structure 3:1
+structure 9:2
+entities:
+torch:25
+leather_armor:2
+rat:1
+bread:1
+player:1
+statue:2
+mushroom:6
+sword:1
+potion:3
+kobold:5
+
+level 5
+structures:
+structure 1:1
+structure 3:2
+structure 5:1
+structure 9:2
+entities:
+apple:2
+torch:36
+player:1
+mushroom:8
+kobold:2
+leather_armor:4
+statue:3
+bread:1
+scroll:1
+rat:3
+watcher:1
+knife:4
+potion:5
+ring:1
+
+level 6
+structures:
+structure 1:1
+structure 3:2
+structure 5:1
+structure 6:1
+structure 8:1
+structure 9:2
+entities:
+apple:1
+mushroom:2
+knife:3
+rat:2
+potion:3
+leather_armor:3
+statue:7
+plate_armor:1
+scroll:1
+player:1
+watcher:2
+torch:39
+kobold:2
+ring:2
+
+level 7
+structures:
+structure 1:1
+structure 3:1
+structure 4:1
+structure 7:1
+structure 9:2
+entities:
+torch:30
+mushroom:2
+player:1
+knife:1
+leather_armor:4
+statue:4
+bread:1
+scroll:3
+potion:3
+tomahawk:1
+warded_armor:1
+kobold:4
+mantid:2
+
+level 8
+structures:
+structure 1:1
+structure 3:1
+structure 8:1
+entities:
+mushroom:5
+player:1
+leather_armor:1
+statue:2
+bread:3
+mantid:2
+kobold:1
+knife:3
+rat:3
+potion:4
+torch:23
+
+level 9
+structures:
+structure 1:1
+structure 3:1
+structure 5:1
+structure 8:2
+structure 9:1
+entities:
+mushroom:2
+player:1
+torch:17
+leather_armor:3
+statue:6
+plate_armor:2
+scroll:2
+knife:2
+watcher:1
+kobold:5
+potion:4
+ring:1
+
+level 10
+structures:
+structure 1:1
+structure 6:1
+structure 8:2
+structure 9:2
+entities:
+mushroom:6
+statue:8
+player:1
+leather_armor:4
+rat:1
+bread:2
+scroll:3
+knife:4
+watcher:1
+potion:5
+kobold:4
+torch:24
+
+level 11
+structures:
+structure 1:1
+structure 3:1
+structure 4:1
+structure 8:1
+structure 9:2
+entities:
+knife:5
+mushroom:2
+player:1
+leather_armor:4
+rat:2
+bread:1
+mantid:1
+potion:1
+statue:4
+scroll:3
+kobold:3
+torch:30
+
+level 12
+structures:
+structure 1:1
+structure 3:2
+structure 7:1
+structure 9:2
+entities:
+bread:1
+mushroom:7
+player:1
+torch:19
+scroll:1
+leather_armor:1
+statue:4
+plate_armor:1
+mantid:1
+kobold:5
+tomahawk:1
+knife:5
+potion:6
+ring:1
+
+level 13
+structures:
+structure 1:1
+structure 3:2
+structure 6:1
+structure 8:2
+structure 9:2
+entities:
+mushroom:5
+rat:1
+statue:8
+knife:6
+leather_armor:4
+player:1
+bread:4
+mantid:1
+scroll:2
+watcher:1
+torch:23
+kobold:3
+potion:6
+
+level 14
+structures:
+structure 1:1
+structure 3:1
+structure 9:2
+entities:
+knife:11
+torch:31
+kobold:1
+statue:2
+mushroom:2
+leather_armor:3
+player:1
+bread:7
+scroll:2
+mantid:5
+plate_armor:3
+warded_armor:1
+potion:4
+ring:1
+
+level 15
+structures:
+structure 1:1
+structure 6:1
+structure 8:2
+entities:
+player:1
+knife:8
+mushroom:1
+sword:1
+statue:6
+spiked_armor:1
+leather_armor:4
+rat:1
+bread:3
+scroll:2
+potion:5
+watcher:1
+torch:19
+kobold:4
+ring:1
+
+level 16
+structures:
+structure 1:1
+structure 3:2
+structure 4:1
+structure 8:1
+structure 9:1
+entities:
+mushroom:3
+player:1
+spiked_armor:1
+leather_armor:4
+statue:3
+bread:2
+scroll:1
+potion:1
+rat:1
+knife:2
+kobold:5
+torch:19
+
+level 17
+structures:
+structure 1:1
+structure 5:1
+structure 6:1
+structure 8:2
+entities:
+rat:1
+player:1
+knife:7
+scroll:1
+kobold:2
+spiked_armor:1
+leather_armor:3
+statue:7
+bread:7
+mantid:1
+mushroom:4
+watcher:2
+torch:20
+potion:8
+ring:4
+
+level 18
+structures:
+structure 1:1
+structure 6:1
+structure 9:2
+entities:
+potion:2
+mantid:1
+bread:4
+knife:9
+statue:4
+player:1
+spiked_armor:2
+leather_armor:1
+rat:1
+plate_armor:2
+scroll:2
+sword:1
+watcher:1
+torch:33
+kobold:3
+mushroom:3
+
+level 19
+structures:
+structure 1:1
+structure 8:1
+entities:
+torch:21
+player:1
+plate_armor:1
+leather_armor:5
+statue:2
+bread:4
+mantid:1
+scroll:3
+kobold:5
+mushroom:3
+potion:3
+knife:3
+
+level 20
+structures:
+structure 1:1
+entities:
+torch:15
+scroll:1
+leather_armor:3
+player:1
+bread:4
+mantid:3
+plate_armor:2
+potion:10
+knife:9
+kobold:3
+mushroom:2
+
+level 21
+structures:
+structure 1:1
+structure 3:2
+structure 4:1
+structure 6:1
+structure 9:2
+entities:
+knife:9
+mushroom:1
+player:1
+leather_armor:5
+statue:4
+plate_armor:2
+mantid:2
+scroll:4
+watcher:1
+kobold:3
+potion:6
+torch:17
+
+level 22
+structures:
+structure 1:1
+structure 5:1
+structure 8:1
+structure 9:2
+entities:
+player:1
+knife:12
+mushroom:5
+plate_armor:1
+rat:1
+kobold:3
+leather_armor:5
+statue:5
+bread:8
+scroll:4
+mantid:1
+watcher:1
+torch:26
+potion:7
+ring:1
+
+level 23
+structures:
+structure 1:1
+structure 3:2
+structure 7:1
+structure 9:1
+entities:
+knife:9
+player:1
+kobold:4
+scroll:2
+leather_armor:5
+statue:3
+bread:3
+mantid:2
+mushroom:3
+tomahawk:1
+warded_armor:1
+potion:11
+torch:13
+
+level 24
+structures:
+structure 1:1
+structure 6:1
+structure 9:2
+entities:
+plate_armor:1
+mushroom:1
+scroll:4
+knife:11
+torch:19
+leather_armor:8
+statue:4
+bread:8
+mantid:2
+player:1
+watcher:1
+potion:3
+kobold:3
+ring:2
+
+level 25
+structures:
+structure 1:1
+structure 6:1
+entities:
+knife:5
+watcher:1
+player:1
+plate_armor:1
+leather_armor:5
+statue:2
+bread:6
+mantid:2
+scroll:1
+tomahawk:1
+torch:16
+kobold:3
+potion:9
+
+level 26
+structures:
+structure 1:1
+structure 6:1
+structure 8:1
+entities:
+torch:19
+player:1
+mantid:2
+leather_armor:1
+statue:4
+bread:4
+scroll:5
+mushroom:1
+watcher:1
+knife:5
+kobold:3
+potion:9
+
+level 27
+structures:
+structure 1:1
+structure 3:1
+structure 9:2
+entities:
+knife:5
+player:1
+mushroom:1
+leather_armor:4
+statue:2
+bread:5
+mantid:1
+plate_armor:3
+scroll:4
+torch:23
+kobold:5
+potion:9
+
+level 28
+structures:
+structure 1:1
+structure 3:1
+structure 6:1
+structure 8:2
+entities:
+mushroom:1
+knife:9
+player:1
+scroll:2
+spiked_armor:1
+leather_armor:5
+statue:6
+plate_armor:2
+mantid:4
+kobold:1
+watcher:1
+bread:6
+potion:6
+torch:17
+
+level 29
+structures:
+structure 1:1
+structure 5:1
+structure 6:1
+entities:
+plate_armor:1
+mushroom:1
+torch:19
+kobold:1
+player:1
+spiked_armor:1
+leather_armor:6
+statue:3
+bread:4
+scroll:3
+mantid:3
+watcher:2
+knife:17
+potion:5
+ring:2
+
+level 30
+structures:
+structure 1:1
+structure 6:1
+entities:
+knife:13
+player:1
+mantid:3
+leather_armor:1
+statue:2
+bread:4
+scroll:2
+kobold:1
+watcher:2
+torch:14
+potion:4
+ring:3
+
+level 31
+structures:
+structure 1:1
+structure 3:2
+structure 5:1
+structure 6:1
+structure 9:2
+entities:
+plate_armor:3
+kobold:1
+mushroom:2
+mantid:3
+player:1
+sword:1
+leather_armor:3
+statue:5
+bread:5
+scroll:4
+knife:11
+watcher:2
+torch:23
+potion:13
+ring:3
+
+level 32
+structures:
+structure 1:1
+structure 6:1
+structure 7:1
+structure 8:2
+entities:
+tomahawk:1
+torch:11
+plate_armor:1
+player:1
+mushroom:2
+leather_armor:7
+statue:8
+bread:1
+scroll:4
+potion:5
+watcher:2
+knife:10
+kobold:4
+ring:2
+
+level 33
+structures:
+structure 1:1
+structure 3:1
+structure 6:1
+structure 9:2
+entities:
+potion:11
+bread:2
+torch:19
+player:1
+scroll:6
+spiked_armor:1
+leather_armor:5
+statue:4
+plate_armor:2
+mantid:2
+knife:12
+watcher:1
+warded_armor:1
+kobold:3
+ring:3
+
+level 34
+structures:
+structure 1:1
+structure 3:1
+structure 5:1
+structure 6:1
+entities:
+plate_armor:2
+player:1
+mushroom:1
+torch:17
+knife:12
+statue:3
+potion:3
+leather_armor:8
+rat:1
+bread:4
+mantid:1
+scroll:3
+watcher:2
+warded_armor:2
+kobold:2
+ring:3
+
+level 35
+structures:
+structure 1:1
+structure 3:1
+structure 5:1
+structure 6:1
+structure 8:1
+structure 9:2
+entities:
+mantid:1
+tomahawk:2
+torch:27
+knife:17
+mushroom:1
+player:1
+plate_armor:2
+leather_armor:7
+statue:7
+bread:2
+scroll:3
+potion:6
+watcher:2
+warded_armor:1
+kobold:3
+ring:3
+
+level 36
+structures:
+structure 1:1
+structure 5:1
+structure 6:1
+structure 9:2
+entities:
+scroll:1
+knife:18
+mushroom:1
+potion:9
+plate_armor:2
+leather_armor:6
+statue:5
+bread:7
+mantid:1
+player:1
+watcher:2
+torch:16
+kobold:3
+ring:3
+
+level 37
+structures:
+structure 1:1
+structure 6:1
+entities:
+statue:2
+torch:11
+plate_armor:3
+scroll:3
+spiked_armor:1
+leather_armor:4
+player:1
+bread:5
+mantid:4
+kobold:1
+watcher:1
+sword:1
+potion:8
+knife:18
+
+level 38
+structures:
+structure 1:1
+structure 3:1
+entities:
+knife:11
+potion:2
+leather_armor:5
+player:1
+plate_armor:4
+scroll:2
+mantid:1
+watcher:1
+torch:9
+kobold:4
+bread:8
+
+level 39
+structures:
+structure 1:1
+structure 6:1
+structure 7:1
+structure 8:1
+entities:
+player:1
+mushroom:2
+knife:15
+watcher:1
+torch:9
+plate_armor:2
+leather_armor:4
+statue:6
+bread:5
+scroll:3
+mantid:2
+tomahawk:1
+potion:5
+kobold:3
+ring:2
+
+level 40
+structures:
+structure 1:1
+structure 5:1
+structure 6:1
+entities:
+player:1
+knife:9
+tomahawk:1
+mushroom:3
+torch:13
+leather_armor:5
+statue:3
+bread:6
+scroll:5
+potion:5
+watcher:2
+mantid:2
+kobold:2
+ring:3
+
+level 41
+structures:
+structure 1:1
+structure 5:1
+structure 7:1
+structure 9:2
+entities:
+torch:18
+leather_armor:9
+player:1
+bread:7
+scroll:4
+tomahawk:2
+warded_armor:1
+mushroom:3
+spiked_armor:1
+statue:5
+kobold:3
+mantid:2
+plate_armor:2
+watcher:1
+knife:12
+potion:9
+ring:1
+
+level 42
+structures:
+structure 1:1
+structure 3:2
+structure 6:1
+entities:
+player:1
+torch:12
+mushroom:1
+plate_armor:2
+knife:9
+leather_armor:5
+statue:2
+bread:4
+scroll:3
+mantid:1
+watcher:2
+potion:5
+kobold:3
+ring:1
+
+level 43
+structures:
+structure 1:1
+structure 5:1
+entities:
+knife:6
+statue:1
+mushroom:1
+plate_armor:1
+leather_armor:2
+player:1
+bread:5
+mantid:3
+torch:7
+watcher:1
+kobold:2
+potion:7
+ring:1
+
+level 44
+structures:
+structure 1:1
+structure 3:1
+structure 5:1
+structure 6:1
+structure 9:2
+entities:
+sword:1
+plate_armor:6
+mantid:2
+knife:16
+mushroom:1
+player:1
+spiked_armor:3
+leather_armor:11
+statue:5
+bread:13
+scroll:7
+kobold:2
+watcher:2
+torch:28
+potion:12
+ring:5
+
+level 45
+structures:
+structure 1:1
+structure 3:1
+structure 6:1
+entities:
+player:1
+tomahawk:1
+torch:11
+bread:7
+mantid:1
+spiked_armor:1
+leather_armor:4
+statue:2
+plate_armor:1
+scroll:2
+kobold:4
+watcher:1
+knife:13
+potion:4
+ring:3
+
+level 46
+structures:
+structure 1:1
+structure 3:1
+structure 5:1
+structure 6:1
+structure 7:1
+structure 8:1
+entities:
+tomahawk:1
+kobold:1
+torch:14
+mushroom:1
+knife:12
+player:1
+leather_armor:2
+statue:7
+plate_armor:1
+scroll:2
+mantid:3
+watcher:2
+bread:13
+potion:10
+ring:1
+
+level 47
+structures:
+structure 1:1
+structure 6:1
+structure 9:2
+entities:
+torch:15
+leather_armor:3
+player:1
+bread:7
+scroll:3
+tomahawk:1
+mushroom:4
+spiked_armor:2
+plate_armor:1
+statue:4
+kobold:1
+mantid:3
+knife:6
+watcher:2
+sword:1
+potion:5
+ring:2
+
+level 48
+structures:
+structure 1:1
+structure 6:1
+structure 7:1
+structure 9:2
+entities:
+mushroom:1
+plate_armor:1
+player:1
+torch:6
+sword:1
+tomahawk:1
+spiked_armor:2
+leather_armor:4
+statue:6
+bread:2
+scroll:1
+mantid:3
+watcher:1
+potion:11
+kobold:2
+ring:5
+
+level 49
+structures:
+structure 1:1
+structure 3:1
+structure 6:1
+entities:
+plate_armor:2
+torch:11
+player:1
+mushroom:1
+spiked_armor:2
+leather_armor:8
+statue:2
+bread:7
+mantid:3
+scroll:5
+watcher:1
+knife:9
+potion:5
+kobold:2
+
+level 50
+structures:
+structure 1:1
+structure 3:1
+structure 6:1
+entities:
+player:1
+mushroom:1
+sword:1
+knife:9
+watcher:1
+kobold:3
+mantid:2
+leather_armor:4
+statue:2
+plate_armor:2
+scroll:2
+torch:9
+tomahawk:1
+bread:7
+potion:4
+ring:1
+
+level 51
+structures:
+structure 1:1
+structure 3:1
+structure 5:1
+structure 6:1
+structure 8:1
+structure 9:2
+entities:
+mushroom:1
+player:1
+torch:12
+plate_armor:1
+knife:11
+spiked_armor:1
+leather_armor:2
+statue:7
+bread:3
+mantid:2
+scroll:5
+watcher:2
+kobold:2
+potion:2
+ring:4
+
+level 52
+structures:
+structure 1:1
+structure 6:1
+structure 7:1
+structure 9:1
+entities:
+bread:1
+player:1
+knife:5
+mantid:1
+tomahawk:1
+mushroom:1
+leather_armor:4
+statue:5
+plate_armor:1
+scroll:2
+torch:8
+watcher:3
+kobold:2
+potion:7
+ring:4
+
+level 53
+structures:
+structure 1:1
+structure 3:1
+structure 6:1
+structure 9:2
+entities:
+player:1
+torch:19
+knife:12
+kobold:3
+plate_armor:3
+spiked_armor:1
+leather_armor:11
+statue:4
+bread:9
+scroll:4
+mushroom:1
+watcher:3
+warded_armor:2
+potion:11
+ring:2
+
+level 54
+structures:
+structure 1:1
+structure 5:1
+structure 6:1
+entities:
+potion:6
+knife:16
+torch:18
+player:1
+spiked_armor:1
+leather_armor:4
+statue:3
+bread:20
+scroll:5
+mantid:2
+watcher:2
+warded_armor:1
+kobold:2
+ring:3
+
+level 55
+structures:
+structure 1:1
+structure 3:2
+structure 5:1
+structure 6:1
+structure 9:2
+entities:
+kobold:1
+plate_armor:1
+mantid:3
+knife:12
+torch:15
+statue:5
+spiked_armor:1
+leather_armor:6
+player:1
+bread:11
+scroll:5
+mushroom:1
+watcher:2
+warded_armor:1
+potion:4
+ring:4
+
+level 56
+structures:
+structure 1:1
+structure 3:2
+structure 6:1
+structure 9:2
+entities:
+kobold:1
+plate_armor:3
+knife:10
+mantid:3
+player:1
+spiked_armor:2
+leather_armor:3
+statue:4
+bread:8
+scroll:2
+torch:13
+watcher:2
+warded_armor:1
+potion:7
+ring:5
+
+level 57
+structures:
+structure 1:1
+structure 5:1
+entities:
+torch:13
+statue:1
+plate_armor:3
+mushroom:1
+leather_armor:11
+player:1
+bread:12
+mantid:4
+knife:10
+watcher:2
+scroll:2
+potion:4
+ring:1
+
+level 58
+structures:
+structure 1:1
+structure 5:1
+structure 6:1
+structure 9:2

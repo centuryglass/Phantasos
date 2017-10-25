@@ -16,21 +16,6 @@ you're interested.
 --]]
 
 --[[
-sfx
-walking:0
-missed attack:1
-attack:2
-scroll:3
-potion:4
-food:5
-throwing:6
-potion throwing:7
-weapon throwing:8
-door open:9
-door close:10
---]]
-
---[[
 write debug data to log.p8l
 only save logs from the last
 program instance.
@@ -56,9 +41,9 @@ strings can be loaded from memory.
 allchars = "0123456789-.abcdefghijklmnopqrstuvwxyz,;_:(){}[]<>/?+=*|!#%&@$^"
 chartable,classtable={},{}
 for i=1,#allchars do
-	local c,n=sub(allchars,i,i),i-1
-	chartable[n],chartable[c]=
-	c,n
+	local ctab,n=sub(allchars,i,i),i-1
+	chartable[n],chartable[ctab]=
+	ctab,n
 end
 
 --[[
@@ -142,29 +127,29 @@ function str_to_table(str,tab)
 	if(not is_string(str))return str
 	local i,buf,tab,val=
 	0,"",tab or {},"null"
-	local key,c
+	local key,c_stt
 	--using "null" to indicate that no
 	--value was found makes it possible
 	--to add nil and false to tables
 	while #str>0 do
-		c,str = sub(str,1,1),sub(str,2)
-		if c== "," then
+		c_stt,str = sub(str,1,1),sub(str,2)
+		if c_stt== "," then
 			if(#buf>0)val=buf
-		elseif c=="=" then
+		elseif c_stt=="=" then
 			key,buf=str_to_val(buf),""
-		elseif c== "{" then
+		elseif c_stt== "{" then
 			local to_close=1
 			for i = 1,#str do
 				local c2=sub(str,i,i)
 				to_close += (c2=="{" and 1 or c2=="}" and -1 or 0)
 				if to_close == 0 then
-					val,str=c..sub(str,1,i),
+					val,str=c_stt..sub(str,1,i),
 					sub(str,i+1)
 					break
 				end
 			end
 		else
-			buf=buf..c
+			buf=buf..c_stt
 		end
 		if(#str==0 and #buf>0 and val=="null")val=buf
 		if val != "null" then
@@ -241,11 +226,11 @@ coroutine that runs fn()
 --]]
 function coroutine(fn)
 	--fn()
-	---[[
+	--[
 	local routine=cocreate(fn)
 	update_routines(routine)
 	coresume(routine)
-	---]]
+	--]
 end
 
 --[[
@@ -253,21 +238,21 @@ find the first pending coroutine
 in a queue, and run it, removing
 completed coroutines in the
 process
-co: a coroutine queue
+routine_queue: a coroutine queue
 [run_all]: if true, run every
 coroutine in the queue once
 --]]
-function run_coroutines(co,run_all)
-	local n = #co
+function run_coroutines(routine_queue,run_all)
+	local n = #routine_queue
 	for i=1,n do
-		local routine = -co
+		local routine = -routine_queue
 		if costatus(routine)=="suspended" then
 			coresume(routine)
-			co(routine)
+			routine_queue(routine)
 			if(not run_all)return true
 		end
 	end
-	if(run_all and #co>0)return true
+	if(run_all and #routine_queue>0)return true
 end
 
 --[[
@@ -336,10 +321,10 @@ solution: call
 	and argsort will reorder the
 	parameters appropriately.
 --]]
-function argsort(vars,a,b,c,d,e,f)
+function argsort(vars,a,b,c_as,d,e,f)
 	--if this fails, add more params
 	assert(not f)
-	local arr = {a,b,c,d,e}
+	local arr = {a,b,c_as,d,e}
 	if is_table(vars) then
 		foreach(vars,function(v) add(arr,v) end)
 	else
@@ -397,8 +382,7 @@ defaults to 1
 --]]
 function rndint(rmax,rmin)
 rmin=rmin or 1
-return rmax<=rmin and rmin or 
-rmin + flr(rnd(1+rmax-rmin))
+return rmin + flr(rnd(1+rmax-rmin))
 end
 
 --[[
@@ -543,54 +527,7 @@ function start_turn()
 			end)
 		end
 	end
-	foreach_entity(function(e)
-		if e.take_turn and loop_le(e.turn,turn) then
-			foreach_pair(status,function(sts,s_name)
-				local turns,fn=e[s_name],sts.fn
-				if turns then
-					--log(e.name..":"..s_name.."-"..turns)
-					if turns > 0 then
-						name_msg(e,sts.s)
-						turns*=-1
-					end
-					if(fn)fn(e,turns)
-					name_msg(e,sts.t)
-					e[s_name]=turns<0 and turns+1
-					if(turns==0)name_msg(e,sts.e)
-				end
-			end)
-			e:take_turn()
-			e.turn=loop_add(turn,1)
-		end
-	end)
 end
-
---[[
-handles all the results of using
-an item or tile including
-use effects, starting the turn,
-closing menus, and changing item
-quantity
-
-itm:any object
-c:the entity using the object
-return:true if c was able to use
-	itm
---]]
-function use(itm,c)
-	if itm.use then
-		local fx=itm.use_sfx
-		if(c==you) msg(itm.use_msg) menu_close_all()
-		if(fx and visible(c))sfx(fx)
-		itm:use(c)
-		if itm.qty then
-			itm:change_qty(-1)
-		end
-		start_turn()
-		return true
-	end
-end
-
 	--[[
 #########-object class-##########
 	a basis for all class tables
@@ -598,8 +535,8 @@ end
 	#####  operators: #####
 	object(): creates a new object
 		instance
-	object<x: return true if object
-		is type x
+	object<x: return true if x
+		is type object
 --]]
 object={}
 object.class={object}
@@ -994,7 +931,7 @@ function(self,x,y,w,h)
 	return self:new()(x,y,w,h)
 end
 copy_all({
-	__call=function(self,a,b,c,d)
+	__call=function(self,a,b,c_rec,d)
 		if(not a) return self"0,0,1,1"
 		if(is_string(a)) return self(unpack(a))
 		if rectangle<a then
@@ -1003,13 +940,13 @@ copy_all({
 			local w,h=1,1
 			if point<b then
 				 w,h=(b-a):get_xy()
-			elseif c then
-				w,h=b,c
+			elseif c_rec then
+				w,h=b,c_rec
 			end
 			self(a.x,a.y,w,h)
 		else
 		 self.x,self.y,self.w,self.h=
-			a,b,c,d
+			a,b,c_rec,d
 		end
 		return self
 	end,
@@ -1180,9 +1117,9 @@ function add_entity(e)
 	else
 		lvl_entities[key] = {e}
 	end
+	if(e.on_level_add)e:on_level_add()
 	if(creature<e)num_creatures+=1
 	if(screen > e.pos)set_redraw()
-	if(e.on_level_add)e:on_level_add()
 end
 
 --get the list of all entities
@@ -1388,6 +1325,8 @@ dst: destination point
 	be a valid destination
 --]]
 function pathfind(src,dst,path_fn,range)
+	--log("finding path to "..#dst)
+	--pathtrace = {}
 	local paths,s_queue,
 	cval,ptimer,path_fn,range,
 	closest,final=
@@ -1402,12 +1341,14 @@ function pathfind(src,dst,path_fn,range)
 		if(not tile.solid) return 0
 	end,range or 0
 	s_queue(#src,0)
+	--pathtrace[#dst]=10--yellow=destination attempt
 	while #s_queue > 0
 	and stat(0)<1000 do
 		ptimer()
 		local srckey = -s_queue
 		if point(srckey):dist(dst)
 		< cval+5 and stat(0)<1000 then
+			--pathtrace[srckey] = 12--blue =src
 			foreach_adj(point(srckey),
 			function(p,t)
 				local poskey,steps,distance=
@@ -1429,17 +1370,23 @@ function pathfind(src,dst,path_fn,range)
 						return true
 					end
 					priority+=distance+steps
+					--pathtrace[poskey]=9--orange=pending
 					s_queue(poskey,priority)
+				--else pathtrace[poskey]=8--red=blocked
 				end
 			end,true)
 			if(final) s_queue:clear()
+		--else pathtrace[srckey]=14--pink=too far off path
 		end
 	end
 	local path,i = stack(),final or closest
 	while i and paths[i].prev do
 		path(point(i))
+		--pathtrace[i]=3--dark green=on final path
 		i=paths[i].prev
 	end
+	--pathtrace[final]=10--green=destination reached
+	--log("found path of length "..#path)
 	return #path>0 and path
 end
 
@@ -1481,40 +1428,6 @@ function rnd_pos(validate)
 end
 
 --[[
-launch something across the map,
-drawing its path. used for
-throwing items, etc
-
-sprite: the sprite drawn across
-	the launch path
-src: starting position
-dst: targeted end position, will
-	be replaced if a creature or
-	solid tile is encountered on the
-	path from src to dest
-post: callback function to run
-	after launching,
-	the final value of dst will be
-	passed to it
-p_swap:optional,color to swap with 12
-	when drawing projectile
---]]
-function launch(sprite,src,dst,post,p_swap)
-	dst = blockpt(src,dst,true) or dst
-	local dpos,offset=
-	draw_pos(src),(dst-src)*2
-	draw_routines(cocreate(function()
-		for i=1,4 do
-			dpos+=offset
-			if(p_swap)pal(12,p_swap)
-			spr(sprite,dpos:get_xy())
-			yield()
-		end
-		post(dst)
-	end))
-end
-
---[[
 ######## entity class ###########
 represents things with a location
 within a level map
@@ -1529,7 +1442,7 @@ map
 --]]
 function entity:init(pos)
 	if pos then
-		self.pos = -pos
+		self.pos = point(pos)
 		add_entity(self)
 	end
 end
@@ -1629,9 +1542,6 @@ food items restore hit points
 --]]
 meat= item:subclass
 "classname=meat,sprite=70,name=meat,hp_boost=5,flr_mult=3,use_msg=you feel much better.,use_sfx=5"
-function meat:use(c)
-	c+=self.hp_boost
-end
 
 apple=meat:subclass
 "classname=apple,sprite=71,name=apple,hp_boost=3,use_msg=you feel a bit better.,flr_mult=-1"
@@ -1648,15 +1558,8 @@ opportunities
 statue=item:subclass
 "classname=statue,sprite=74,name=statue"
 function statue:on_level_add()
-	if building 
-	and rnd(100) < lvl_floor-2 then
-		sentinel(-self.pos):take(self)
-		--remove_entity(self)
-	else
-		get_tile(self.pos).solid=true
-	end
+	get_tile(self.pos).solid=true
 end
-
 function statue:on_level_remove()
 	local t = get_tile(self.pos)
 	t.solid = t:class().solid
@@ -1683,8 +1586,7 @@ function color_coded_itm:classgen()
 		}
 	end)
 	for i=1,#self.types do
-		local c = -colors
-		copy_all(c,self.types[i])
+		copy_all(-colors,self.types[i])
 	end
 end
 
@@ -1699,94 +1601,9 @@ function color_coded_itm:init(params)
 	end
 end
 
---[[
-creature c uses this item. if the
-player sees this,reveal its identity
---]]
-function color_coded_itm:use(c)
-	local ti,name,real_name,cname=
-	unpack(self,"ti,name,r_name,classname")
-	real_name=real_name.." "..cname
-	if visible(c) and name !=
-	real_name then
-		function update_names(i)
-			if(i.name==name)i.name=real_name
-		end
-		update_names(self.types[ti])
-		foreach_entity(function(e)
-			update_names(e)
-			if e.items then
-				foreach(e.items,function(i)
-				update_names(i) end)
-			end
-		end)
-		msg("that was a "..real_name)
-	end
-	self:on_use(c)
-end
-
 potion=color_coded_itm:subclass
 "flr_mult=3,sprite=65,throw_sfx=7,use_sfx=4,classname=potion,types={{r_name=healing,use_msg=you are healed,ti=1},{r_name=poison,use_msg=you feel sick,ti=2},{r_name=wisdom,use_msg=you feel more experienced,ti=3},{r_name=sleep,use_msg=you fell asleep,ti=4},{r_name=lethe,use_msg=where are you?,ti=5},{r_name=water,use_msg=refreshing!,ti=6},{r_name=juice,use_msg=yum,ti=7},{r_name=spectral,use_msg=you feel ghostly,ti=8},{r_name=toughness,use_msg=nothing can hurt you now!,ti=9},{r_name=blindness,use_msg=who turned out the lights?,ti=10},{r_name=speed,use_msg=the world slows down.,ti=11}},colors={1=viscous,2=fizzing,3=grassy,4=umber,5=ashen,6=smoking,7=milky,8=bloody,9=orange,10=glowing,11=lime,12=sky,13=reeking,14=fragrant,15=bland,0=murky}"
 potion:classgen()
-function potion:on_use(c)
-	local ti,is_player=
-	self.ti,c==you
-	--healing: restore max hp
-	if(ti == 1)c.hp,c.poison,c.confused=c.hp_max 
-	--poison: take damage for several
-	--turns
-	if(ti == 2)c.poison=rndint(9,5)
-	--experience boost
-	if(ti == 3)c.exp=flr((c.exp+10)*1.5)
-	--sleep: prevents action and
-	--restore 1 hp per turn
-	if(ti == 4)c.sleep=rndint(15,8)
-	--amnesia: forget the level layout
-	--makes enemies forget target
-	--and path
-	if ti == 5 then
-		copy_all("target=nil,path=nil",c)
-		if c==you then
-			foreach_tile(function(p,t)
-				t.seen = nil
-			end)
-		end
-	end
-	--6:water. does nothing
-	--juice: slight hp restoration
-	if(ti == 7)c+=2
-	--spectral: walk through solid
-	--objects. take care not to be
-	--in a wall when it wears off
-	if(ti == 8)c.spectral = rndint(20,10)
-	--invincibility: block attack
-	--damage for a few turns
-	if(ti == 9)c.tough=rndint(7,3)
-	--blindness
-	if(ti == 10)c.blind=rndint(12,8)
-	if(ti == 11)c.haste=rndint(20,4)
-end
-
---[[
-when thrown, potions shatter,
-affecting all creatures in a 3x3
-square
---]]
-function potion:on_throw(pos)
-	name_msg(self," shatters!")
-	foreach_adj(pos,function(p,t)
-		local c = get_creature(p)
-		if(c) self:use(c)
-		self.sprite=60
-		draw_routines(cocreate(function()
-			for i=1,3 do
-				self:draw(draw_pos(p))
-				yield()
-			end
-		end))
-	end,false,true)
-	remove_entity(self)
-end
 
 --[[
 mushrooms mostly have minor effects,
@@ -1796,13 +1613,6 @@ usually bad. beware the deathcap.
 mushroom=color_coded_itm:subclass
 "use_sfx=5,classname=mushroom,sprite=67,types={{r_name=tasty,use_msg=that was delicious,ti=1},{r_name=disgusting,use_msg=that was awful,ti=2},{r_name=deathcap,use_msg=you feel deathly ill,ti=3},{r_name=magic,use_msg=look at the colors!,ti=4}},colors={0=speckled,14=lovely,8=bleeding,6=chrome,3=moldy,15=fleshy}"
 mushroom:classgen()
-function mushroom:on_use(c)
-	local ti=self.ti
-	if(ti == 1)c+=10
-	if(ti == 2)c-=1
-	if(ti == 3)c.hp=1
-	if(ti == 4)c.confused=rndint(15,4)
-end
 
 --[[
 another one-use magic item type.
@@ -1814,73 +1624,7 @@ scroll=color_coded_itm:subclass
 "use_sfx=3,flr_mult=2,classname=scroll,sprite=66,types={{r_name=movement,use_msg=you are somewhere else,ti=1},{r_name=wealth,use_msg=riches appear around you,ti=2},{r_name=summoning,use_msg=you have company!,ti=3},{r_name=magic mapping,use_msg=you know your surroundings.,ti=4},,{r_name=firebolt,use_msg=the scroll sends out fire.,ti=5}},colors={1=denim,0=filthy,3=mossy,4=tattered,8=ominous,6=faded}"
 
 scroll:classgen()
-function scroll:on_use(c)
-	local ti=self.ti
-	local gentable
-	if(ti == 1)move_entity(c,rnd_pos(nil,-1))
-	if(ti == 2) gentable="item_table"
-	if(ti == 3) gentable="spawn_table"
-	if ti == 5 then	
-		map_cursor_init(function(p)
-			launch(59,point(you.pos),p,
-			function(dst)
-				local crt =get_creature(dst)
-				if(crt) you:attack(crt,crt.hp)
-			end)
-		end)
-	end
-	if gentable then
-		foreach_adj(c.pos,function(p,t)
-			while not prob_tbl(t[gentable],
-			function(class)
-				if class != scroll then
-					class(p)
-					return true
-				end
-			end) do end
-		end)
-	end
-	if ti == 4 then
-		foreach_tile(function(p,t)
-			t.seen=true
-		end)
-	end
-end
-
 equipment=item:subclass"classname=equipment,bonuses={hitbonus=1}"
-
-function equipment:equip(c)
-	local equip_slot,itm=self.equip_slot,
-	c:drop(self,1,point"x=99,y=99")
-	local equipped=c.equipped[equip_slot]
-	if(equipped)equipped:remove()
-	foreach_pair(self.bonuses,
-	function(v,k)
-		if type(v) == "number" then
-			c[k]+=v
-		else
-			c[k]=v
-		end
-	end)
-	remove_entity(itm)
-	c.equipped[equip_slot],itm.holder
-	=itm,c
-end
-
-function equipment:remove()
-	local holder=self.holder
-	holder.equipped[self.equip_slot]=nil
-	foreach_pair(self.bonuses,
-	function(v,k)
-		if type(v) == number then
-			holder[k]-=v
-		else
-			holder[k]=holder:class()[k]
-		end
-	end)
-	holder:drop(self)
-	holder:take(self)
-end
 
 --[[
 tiles lit by torches are
@@ -1893,6 +1637,7 @@ radius
 --]]
 torch = equipment:subclass
 	"classname=torch,sprite=64,name=torch,sight_rad=4,equip_slot=weapon,bonuses={sight_rad=1,dmin_boost=1,dmax_boost=1}"
+
 
 	--[[
 	run fn(p,t) for each map tile
@@ -1963,23 +1708,9 @@ represents entities that have
 health and experience and take
 actions on turns
 
-#####  operators: #####
-crt+n: crt gains n hp
-crt-n: crt loses n hp
 --]]
 creature = entity:subclass
 "classname=creature,sight_rad=4,hp_max=10,exp=2,hitrate=75,min_dmg=0,max_dmg=4,ac=0,dmax_boost=0,dmin_boost=0,hit_boost=0"
-
-copy_all({
-	__add=function(self,x)
-		self:hp_change(x)
-		return self
-	end,
-	__sub=function(self,x)
-		--self:hp_change(-x)
-		return self + -x
-	end
-},creature.metatable)
 
 function creature:init(params)
 	entity.init(self,params)
@@ -1993,80 +1724,9 @@ function creature:item_gen()
 	prob_tbl(self.item_table,
 	function(class)
 		local itm = class(self)
-		if(equipment<itm)itm:equip(self)
 	end)
 end
 
---[[
-each turn, creatures will either:
-1.seek out and attack the player
-	if within range
-2.attempt to return to a guard
-	position, if they have one
-3.wander around randomly
-[a2]:if true, the creature is
-taking a second bonus action
---]]
-function creature:take_turn(a2)
-	if not self.sleeping and self.pos then
-		function restart_turn() self:take_turn(a2) end
-		local cpos,target,guard_pos,
-		sight_rad,path,ranged,dest
-		= unpack(self,
-		"pos,target,guard_pos,sight_rad,path,ranged")
-		--if no target, try locking
-		--onto the player
-		if not target and
-		self.target_lost != turn
-		and self:can_see(you.pos) and
-		cpos:dist(you.pos)<sight_rad then
-			self.target=you
-			return restart_turn()
-		end
-		dest=target and target.pos
-		or guard_pos
-		local t_sighted=
-		target and self:can_see(dest)
-		if target and (target.hp <=0 or
-		not t_sighted and
-		cpos:dist(dest) > 2) then
-			self.target,self.target_lost=
-			nil,turn
-			return restart_turn()
-		end
-		if ranged and t_sighted then
-			launch(ranged,cpos,dest,
-			function(hpt)
-				if hpt==dest then
-					self:attack(target)
-				end
-			end)
-		else
-			if dest then
-				local tdist= cpos:dist(dest)
-				if (not path or tdist<2 and
-					cpos:dist(path:get(1)) > tdist)
-					and cpos!=dest then
-					self.path=pathfind(cpos,dest)
-				end
-			end
-			local d
-			if(not(self.path or guard_pos))d=rndint(3,0)
-			self:move(d)
-		end
-	end
-	if(self.haste and not a2)self:take_turn(true)
-end
---[[
-creatures will attack eachother if
-they're in the way, but they won't
-hurt their own kind
---]]
-function creature:would_attack(c2)
-	return self.confused or
-	target==c2 or
-	not(self:class()<c2)
-end
 
 --take an item from the level map
 function creature:take(itm)
@@ -2109,108 +1769,9 @@ function creature:drop(itm,qty,pos)
 	return dropped
 end
 
-
---[[
-creature attempts to follow a path
-or move in a direction through the
-level.
-[d]: optional direction
---]]
-function creature:move(d)
-	if(self.confused and rnd(2)<1)d=rndint(3,0)
-	local path = self.path
-	if d or path then
- 	local dpos = d and
- 	point(self.pos):move(d)
- 	or -path
- 	local dest,crt = get_tile(dpos),
-		get_creature(dpos)
-		if dest and in_bounds(dpos) and
-		not crt and (not dest.solid or
-		self.spectral) then
-				if(not self.tempsprite and screen>self.pos)self.tempsprite=self.sprite+1
-				move_entity(self,dpos)
-				if(visible(self))sfx(0)
-		else
-			if crt and
-			self:would_attack(crt) then
-				self:attack(crt)
-			end
-			self.path = nil
-		end
-		if(dest and dest.on_move)dest:on_move(self)
-		if(path and #path==0)self.path=nil
-	end
-end
-
---[[
-change a creature's hp, removing
-it and dropping its items if
-hp reaches 0
---]]
-function creature:hp_change(n)
-	self.hp=min(self.hp_max,self.hp+n)
-	if self.hp <= 0 then
-		if self==you then
-			self.hp=self.hp_max
-			deaths=deaths and deaths+1 or 1
-			msg("deaths:"..deaths)
-			return
-		end
-		foreach(self.items,function(itm)
-			self:drop(itm)
-		end)
-		foreach_pair(self.equipped,
-		function(itm)
-			self:drop(itm)
-		end)
-		name_msg(self," died.")
-		remove_entity(self)
-	end
-end
-
---[[
-	this creature attacks another
-	creature (c2)
-	[dmg]:replaces the creature's
-			usual attack damage
-	[hitrate]: replaces the creature's
-			usual hitrate
---]]
-function creature:attack(c2,dmg,hitrate)
-	dmg,hitrate=
-	dmg or max(0,rndint(self.max_dmg+self.dmax_boost,self.min_dmg+self.dmin_boost)-c2.ac),
-	hitrate or self.hitrate+self.hit_boost
-	if(not self.tempsprite and screen>self.pos)self.tempsprite=self.sprite+2
-	local fx
-	function battle_msg(msg1,msg2)
-		name_msg(self,msg1..c2.name..msg2)
-	end
-	if rndint(100) > hitrate then
-		battle_msg(" missed ","!")
-		fx=1
-	else
-		c2.target=c1
-		fx=2
-		if dmg == 0 then
-			 battle_msg(" barely hits ",".")
-				return
-		else
-			battle_msg(" hit "," for "..dmg.." damage.")
-			if dmg >= c2.hp then
-				if(self==you)kills+=1
-				self.exp+=c2.exp
-			end
-		end
-		c2 -= dmg
-	end
-	if(fx and visible(self))sfx(fx)
-end
-
-
 --weakest enemy class, usually not much of a threat
 rat = creature:subclass
-"classname=rat,name=rat,sprite=144,hp_max=5,sight_rad=6,flr_mult=-10,item_table={meat=200,knife=10}"
+"classname=rat,name=rat,sprite=144,hp_max=5,sight_rad=6,flr_mult=-10,ranged=30,item_table={meat=200,knife=10}"
 
 --slightly stronger, usually armed
 kobold=rat:subclass
@@ -2223,22 +1784,10 @@ mantid=rat:subclass
 --powerful guards
 watcher=mantid:subclass
 "classname=watcher,name=watcher,sight_rad=10,sprite=176,hp_max=20,hitrate=95,fast=false,min_dmg=3,max_dmg=6,ac=3,exp=20,flr_mult=2,item_table={knife=500,sword=1000,bread=800,potion=400,spiked_armor=200}"
-function watcher:init(params)
-	creature.init(self,params)
-	self.guard_pos=-self.pos
-end
-
-sentinel=watcher:subclass
-"classname=sentinel,name=sentinel,sight_rad=2,sprite=160,hp_max=25,hitrate=100,fast=false,min_dmg=3,max_dmg=3,ac=3,exp=20,flr_mult=2,item_table={statue=1000,spiked_armor=500}"
 
 --player class
 player = creature:subclass
-"classname=player,name=rogue,sprite=128,hp_max=10,hitrate=85,min_dmg=1,max_dmg=5,take_turn=always_nil,item_table={bread=1000,apple=800,meat=200,torch=300,potion=500,scroll=500}"
-
-function player:move(d)
-	if(not turn_running) creature.move(self,d)
-	start_turn()
-end
+"classname=player,name=rogue,sprite=128,hp_max=10,hitrate=85,min_dmg=1,max_dmg=5,take_turn=always_nil,item_table={bread=1000,apple=800,meat=200,torch=1000,potion=500,scroll=500}"
 
 --########-tile classes-########-
 tile = object:subclass
@@ -2287,16 +1836,6 @@ temple_wall=wall:subclass
 
 door = tile:subclass
 	"classname=door,sprite=21,use_sfx=9"
-function door:on_move(mover)
-	if(self.solid)use(self,mover.pos)
-end
-
-function door:use()
-	local s_change = self.solid and 1 or -1
-	self.solid=not self.solid
-	self.use_sfx+=s_change
-	self.sprite+=s_change
-end
 
 temple_door = door:subclass
 "classname=temple_door,sprite=37"
@@ -2312,9 +1851,6 @@ temple_secret_door = door:subclass
 
 up_stair = tile:subclass
 	"classname=up_stair,sprite=5,solid=false"
-function up_stair:use()
-	msg"you're not going back"
-end
 
 stair = tile:subclass
 	"classname=stair,sprite=6,solid=false"
@@ -2329,7 +1865,7 @@ function stair:use()
 				cl.hp_max+=2
 				cl.min_dmg+=1
 				cl.max_dmg+=1
-				--cl.p_swap=lvl_floor
+				cl.p_swap=lvl_floor
 			end
 		end)
 		build_pos,building=
@@ -2346,13 +1882,15 @@ end
 function build_level()
 	--load pre-designed level features
 	--from memory
+	log""
+	log("level "..lvl_floor)
 	local f_lists=str_to_table"addr=264e,len=634"
 	local top_percent,range,ftimer=
 	100-#f_lists,4,timer()
 	ctrl,building,
 	build_percent,tiles_placed,
 	builder_walls,builder_floors=
-	loading_ctrl,unpack"true,0,0,cave_wall,cave_floor"
+	menu_ctrl,unpack"true,0,0,cave_wall,cave_floor"
 	coroutine(function()
 		--### main building loop  ###
 		while build_percent < top_percent do
@@ -2455,8 +1993,10 @@ function build_level()
 				and dungeon_floor() or dungeon_wall())
 			end
 		end)
+		local structlog={}
 		--place pre-designed structures
 		for i=1,#f_lists do
+			structlog[i]=0
 			local feature=f_lists[i]
 			--if(is_string(feature))log(feature)
 			local attempts,build_count,class=
@@ -2499,6 +2039,7 @@ function build_level()
 								class(pos)
 							end
 						end)
+						structlog[i]+=1
 						build_count -=1
 						if(build_count<1)return true
 					end
@@ -2507,6 +2048,11 @@ function build_level()
 			build_percent+=1
 		end
 		set_tile(you.pos,up_stair())
+		log("structures:")
+		foreach_pair(structlog,
+		function(v,k)
+			if(v>0)log("structure "..k..":"..v)
+		end)
 		--generate items
 		foreach_tile(function(p,t)
 			prob_tbl(t.item_table,
@@ -2536,32 +2082,6 @@ end
 
 
 -----------ui functions---------
---[[
-cursor for selecting points in
-the level map
---]]
-function map_cursor_init(action,bounds)
-	menu_close_all()
-	map_cursor,map_cursor_action,
-	map_cursor_bounds,
-	ctrl=
-	{
-		sprite=28,
-		pos=-you.pos,
-		draw=entity.draw
-	},
-	action,
-	bounds or screen,
-	selection_ctrl
-	set_redraw()
-end
-
-function map_cursor_remove()
-	map_cursor=nil
-	set_redraw()
-	if(ctrl==selection_ctrl)ctrl=default_ctrl
-end
-
 --[[
  draws a rectangular border
  region around rectangle r
@@ -2662,196 +2182,7 @@ function main_menu:update()
 	if(self.index>#self)self.index=#self
 end
 
-main_menu:add("inventory",
-function() inventory:open() end)
-
-main_menu:add("equipment",
-function() equip_menu:open() end)
-
-main_menu:add("knowledge",
-function() stats:open() end)
-
-main_menu:add("use",
-function()
-	menu_close_all()
-	map_cursor_init(function(p)
-		if(use(get_tile(p),you)) return
-		for e in all(get_entities(p)) do
-			if(use(e,you)) return
-		end
-		msg"you can't use that."
-	end,
-	rectangle(you.pos):expand())
-end)
---[[
-main_menu:add("god mode",
-function()
-	copy_all("can_see=always_true,spectral=true,sight_rad=999,hp_max=999,hitrate=100,min_dmg=999,max_dmg=2222",you)
-	reveal_all=true
-	turn_routine(turn,-1,function()
-		you.hp=999
-	end)
-end)
---]]
---[[
-main_menu:add("give scroll",
-function()
-	scroll:new(you)
-end)
---]]
-
-inventory=menu()
-function inventory:update()
-	self.index = 1
-	self:clear()
-	foreach(you.items,
-	function(itm)
-		self:add("",function()
-			local itm_menu,itm_name,commit=
-			menu(),
-			itm.name,
-			function()
-				menu_close_all()
-				start_turn()
-			end
-			itm_menu.pos=rectangle"20,60,1,1"
-			if itm.use then
-				itm_menu:add("use "..itm_name,
-				function()
-					use(itm,you)
-					commit()
-				end)
-			end
-			if equipment<itm then
-				itm_menu:add("equip "..itm_name,
-				function()
-					itm:equip(you)
-					commit()
-				end)
-			end
-			itm_menu:add("drop "..itm_name,
-			function()
-				you:drop(itm,1)
-				commit()
-			end)
-			itm_menu:add("throw "..itm_name,
-			function()
-				menu_close_all()
-				map_cursor_init(function(p)
-					launch(itm.sprite,point(you.pos),p,
-					function(dst)
-						you:drop(itm,1,dst)
-						local crt =get_creature(dst)
-						if(crt) you:attack(crt,itm.dthrown or 1)
-						if(itm.on_throw)itm:on_throw(dst)
-						sfx(itm.throw_sfx)
-						start_turn()
-					end,itm.p_swap)
-				end)
-			end)
-			itm_menu:open()
-		end)
-	end)
-end
-
-function inventory:draw()
-	draw_border"56,20,19,88"
-	for i=1,min(#you.items,7) do
-		local y1,itm =11+i*12,you.items[i]
-		itm:draw(point(60,y1))
-		if(i == self.index)spr(28,60,y1)
-		print(itm.qty,69,y1+6,10)
-	end
-end
-
-equip_menu=menu()
-function equip_menu:update()
-	self.index = 1
-	self:clear()
-	foreach(equip_types,
-	function(equip_slot)
-		local itm = you.equipped[equip_slot]
-		self{
-			op=itm and function()
-				local itm_menu=menu()
-				itm_menu.pos=rectangle"20,60,1,1"
-				itm_menu{
-					name="remove "..itm.name,
-					op=function()
-						itm:remove()
-						self:update()
-						menu_close()
-					end
-				}
-				itm_menu:open()
-			end or always_nil
-		}
-	end)
-end
-
-stats=menu()
-function stats:update()
-	self:clear()
-	local titles,vals=
-	str_to_table
-	"armor class:,damage:,hit rate:,creatures killed:,most exp:,most kills:,deepest floor:",
-	{
-		you.ac,
-		(you.min_dmg+you.dmin_boost).."-"..(you.max_dmg+you.dmax_boost),
-		(you.hitrate+you.hit_boost),
-		kills,
-		high_scores[1],
-		high_scores[2],
-		high_scores[3]
-	}
-	for i=1,#titles do
-		self:add(titles[i]..vals[i],always_nil)
-	end
-	if(pstat)self:add(pstat,always_nil)
-end
-
-
-function equip_menu:draw()
-	sspr(unpack"96,96,12,30,56,20")
-	spr(28,58,13+9*self.index)
-	local i=0
-	foreach(equip_types,function(eqp)
-		local itm=you.equipped[eqp]
-		if itm then
-			itm:draw(point(58,22+i))
-		end
-		i+=9
-	end)
-end
-
 --####### main controls #######--
-function default_ctrl()
-	for i=0,3 do
-		if(btnp(i)) you:move(i)
-	end
-	if(btnp"4") main_menu:open()
-	if(btnp"5") show_map=not show_map
-	set_redraw()
-end
-
-function selection_ctrl()
-	for i=0,3 do
-		if btnp(i) then
-			local pos =
-			(-map_cursor.pos):move(i)
-			if map_cursor_bounds>pos and
-			in_bounds(pos) then
-				map_cursor.pos(pos)
-				set_redraw()
-			end
-		end
-	end
-	if btnp"4" then
-		map_cursor_action(map_cursor.pos)
-		map_cursor_remove()
-	end
-	if(btnp"5") msg"cancelled." map_cursor_remove()
-end
 
 --alternate controls that
 --activate when a menu is active
@@ -2894,13 +2225,12 @@ end
 
 --##### main game loop ########--
 function _init()
-	cartdata"phantasos"
 	level_init()
 	update_routines,draw_routines,
 	screen,
 	ctrl,
 	build_pos,
-	show_map,--false
+	show_map,--true
 	frame,--0
 	turn,--0
 	num_creatures,--0
@@ -2915,7 +2245,7 @@ function _init()
 	rectangle()*16,
 	loading_ctrl,
 	rnd_pos(always_true),
-	unpack"false,0,0,0,7,1,true,true,0,{0,0,0},{weapon,armor,rings}"
+	unpack"true,0,0,0,7,1,true,true,0,{0,0,0},{weapon,armor,rings}"
 	you,draw_tbl,los_tbl =
 	player(build_pos),
 	point_mapping"addr=2000,len=284",{}
@@ -2929,8 +2259,8 @@ function _init()
 		end
 		los_tbl[#los_pt[1]]=mapped
 	end)
+	msg"saving build stats in log.p8l"
 	build_level()
-	msg"travel deeper, rogue."
 end
 
 function _update()
@@ -2939,51 +2269,45 @@ function _update()
 	end
 	if turn_running then--finish turn
 		turn=loop_add(turn,1)
-		if you.hp <=0 then
-			gameover,reveal_all,ctrl=
-			true,true,no_ctrl
-		end
 		turn_running=false
-		local exp=you.exp
-		you.hp_max,you.max_dmg,you.hitrate=
-		10+flr(exp/30),
-		player.max_dmg+flr(exp/100),
-		80+exp/100
-		local score={exp,kills,lvl_floor}
-		for i=1,3 do
-			high_scores[i]=max(score[i],dget(i))
-			dset(i,high_scores[i])
-		end
-	elseif btnp()!=0 and 
-	not redraw then
+	elseif not redraw then
+		--set_redraw()
 		if not title and #msg>0 then
 			msg_update()
 		else
 			if(msg.curr)msg_update()
+			msg("generated "..num_creatures.."/"..max_creatures.." creatures")
+			if num_creatures>=max_creatures then
+				local elog={}
+				foreach_entity(function(e)
+					if elog[e.classname] then
+						elog[e.classname]+=1
+					else
+						elog[e.classname]=1
+					end
+				end)
+				log("entities:")
+				foreach_pair(elog,
+				function(v,k)
+					log(k..":"..v)
+				end)
+				local t=stair()
+				set_tile(you.pos,t)
+				t:use()
+			end
 			ctrl()
+			start_turn()
 		end
 	end
 end
 
 function _draw()
 	frame=loop_add(frame,1)
-	--### draw loading screen #######
-	if title or	building then
-		palt(0,false)
-		sspr(32*(flr((frame%18)/6)),unpack"96,32,32,0,0,128,128")
-		if(frame%9==0)sfx(0)
-		pal()
-		if(title) sspr(unpack"64,64,64,16,14,0,100,25")
-		local txt = "press any key to start"
-		if(build_percent < 100) txt="descending:"..build_percent.."%"
-		local x1 = 66-#txt*2
-		draw_border(rectangle(x1,118,#txt*4,128))
-		print(txt,x1+1,121,10)
-		return
-	end
-	if not building
-	and redraw and loop_le(redraw,frame) then
+	--sspr(unpack"64,64,64,16,14,0,100,25")
+	if not building or
+	drp!=build_percent then--and loop_le(redraw,frame) then
 		--######## draw level ##########
+		drp=build_percent
 		redraw=nil
 		cls()
 		set_screen()
@@ -2991,8 +2315,6 @@ function _draw()
 		function draw(s)
 				spr(s,(keypt*8):get_xy())
 		end
-		local hidden,dark_pal={},
-		str_to_table"0=0,1=0,2=1,3=1,4=2,5=1,6=5,7=6,8=2,9=4,10=4,11=3,12=1,13=5,14=8,15=4"
 		for i=1,#draw_tbl do
 			local pt_tbl=draw_tbl[i]
 			keypt = pt_tbl[1]
@@ -3000,56 +2322,31 @@ function _draw()
 			local t,key=
 			get_tile(abs_pos) or void,
 			#keypt
-			foreach_pair(dark_pal,function(v,k)
-				pal(k,you.confused and rndint(16,0) or
-				v)
-			end)
-			if reveal_all or not (hidden[key]
-			or t < void
-			or (you.pos:dist(abs_pos)
-			> you.sight_rad and not t.lights)
-			or you.blind) then
-				t.seen=true
-				if not you.confused then
-					pal()
-				end
-				draw(t.sprite)
-				foreach_entity(function(e)
-					e:draw()
-				end,rectangle(abs_pos))
-			elseif t.seen then
-				draw(t.sprite)
-			end
-			pal()
-			if t.solid or hidden[key] then
-				for k=2,#pt_tbl do
-					hidden[#pt_tbl[k]] = true
-				end
-			end
+			draw(t.sprite)
+			foreach_entity(function(e)
+				e:draw()
+			end,rectangle(abs_pos))
 		end
-		if(map_cursor)map_cursor:draw()
-
 		--###### draw status bar ######
-		draw_border"8,116,110,10"
-		print("hp:"..you.hp.."/"..you.hp_max.." exp:"..you.exp
-		.." floor "..lvl_floor,unpack"15,119,10")
+		draw_border"0,116,126,10"
+		print("bld%:"..build_percent..
+		" mem:"..flr(stat(0))..
+		" lvl:"..lvl_floor..
+		" turn:"..turn,unpack"2,119,10")
 		--#### draw minimap window ######
 		if show_map then
 			draw_border"17,19,94,94"
 			rectfill(unpack"19,21,110,112,0")
 			foreach_tile(function(p,t)
-				if t.seen or reveal_all then
-					function mapspr(s)
-						local x,y = ((p*3)+point"x=19,y=21"):get_xy()
-						sspr((s%16)*8,flr(s/16)*8,8,8,x,y,3,3)
-					end
-					mapspr(t.sprite)
-					if visible(p) then
-						foreach_entity(function(e)
-							mapspr(e.sprite)
-						end,rectangle(p))
-					end
+				function mapspr(s)
+					local x,y = ((p*3)+point"x=19,y=21"):get_xy()
+					sspr((s%16)*8,flr(s/16)*8,8,8,x,y,3,3)
 				end
+				mapspr(t.sprite)
+				foreach_entity(function(e)
+					if(creature<e)mapspr(44)
+					mapspr(e.sprite)
+				end,rectangle(p))
 			end)
 		end
 	end
@@ -3062,7 +2359,6 @@ function _draw()
 	print(last,4,4,9)
 	if(#msg>0)spr(unpack"31,120,10")
 	print(curr,unpack"4,10,10")
-
 	--######## draw menus ##########
 	foreach(open_menus.values,
 	function(m)m:draw()end)
@@ -3089,14 +2385,14 @@ d2ddd2ddd2ddd2dd200000020110222001110220d999aaadd999aaadd2ddd0ddd22dd22d00000000
 d2ddd2ddd200000d2ccddd020122011002201120d92211add92000add2ddd0ddd000000200000000000000000000000000000000000000000000000000000000
 20112011201120112ccccc020110011002200220190210a1192000a1211120111000000d0000000000000000000000009a00009a000000000000000000000000
 2ddd2ddd2ddd2ddd222222220000000000000000d92211add92000ad2ddd20ddd00000020000000000000000000000009aa009aa000000000000000000000000
-33bbbb333333b3331b3333b11111111112211221b113b113b113b113333bb33333bbbb3300000000444444440000000000000000000000000000000000000000
-0bb10bb1013bcb31131222311b2222b12b1221b2bb3b1b3bbb3b0b3b03b00b313b0001b30000000048c080340000000000000000000000000000000000000000
-10b10b1103bcccb103112230121dd12121d11d12b3b313b3b3b000b310b00b111b0001b10000000048c289340000000000000000000000000000000000000000
-10b10b11033bcb310dd11dd012dccd21121cc121b3b313b3b3b000b310b00b111b0001b100000000444444440000000000000000000000000000000000000000
-10b10b11103b0b110dbddbd012dccd21121cc121b3b313b3b3b000b310b00b111b0001b1000000004389c8340000000000000000000000000000000000000000
-10b10b11103b0b110bddddb0121dd12121d11d12b3b313b3b3b000b310b00b111b0001b100000000444444440000000000000000000000000000000000000000
-0bb10bb1033b0b31133cc3311b2222b12b1221b2b3b313b3b3b000b303b00b313b0001b30000000049c389340000000000000000000000000000000000000000
-33bbbb333333b333110000111111111112211221bbbbbbbbbbbbbbbb333bb33333bbbb3300000000444444440000000000000000000000000000000000000000
+33bbbb333333b3331b3333b11111111112211221b113b113b113b113333bb33333bbbb33000000004444444400000000111111117777777788888888aaaaaaaa
+0bb10bb1013bcb31131222311b2222b12b1221b2bb3b1b3bbb3b0b3b03b00b313b0001b30000000048c0803400000000111111117777777788888888aaaaaaaa
+10b10b1103bcccb103112230121dd12121d11d12b3b313b3b3b000b310b00b111b0001b10000000048c2893400000000111111117777777788888888aaaaaaaa
+10b10b11033bcb310dd11dd012dccd21121cc121b3b313b3b3b000b310b00b111b0001b1000000004444444400000000111111117777777788888888aaaaaaaa
+10b10b11103b0b110dbddbd012dccd21121cc121b3b313b3b3b000b310b00b111b0001b1000000004389c83400000000111111117777777788888888aaaaaaaa
+10b10b11103b0b110bddddb0121dd12121d11d12b3b313b3b3b000b310b00b111b0001b1000000004444444400000000111111117777777788888888aaaaaaaa
+0bb10bb1033b0b31133cc3311b2222b12b1221b2b3b313b3b3b000b303b00b313b0001b30000000049c3893400000000111111117777777788888888aaaaaaaa
+33bbbb333333b333110000111111111112211221bbbbbbbbbbbbbbbb333bb33333bbbb33000000004444444400000000111111117777777788888888aaaaaaaa
 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000cc0c000101111011000000000000000
 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000808000000cccc0110000110000100044000000
 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000089aa800cccc0000011110000000001046600000
