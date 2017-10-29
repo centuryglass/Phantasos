@@ -397,7 +397,7 @@ defaults to 1
 --]]
 function rndint(rmax,rmin)
 rmin=rmin or 1
-return rmax<=rmin and rmin or 
+return rmax<=rmin and rmin or
 rmin + flr(rnd(1+rmax-rmin))
 end
 
@@ -1648,7 +1648,7 @@ opportunities
 statue=item:subclass
 "classname=statue,sprite=74,name=statue"
 function statue:on_level_add()
-	if building 
+	if building
 	and rnd(100) < lvl_floor-2 then
 		sentinel(-self.pos):take(self)
 		--remove_entity(self)
@@ -1732,7 +1732,7 @@ function potion:on_use(c)
 	local ti,is_player=
 	self.ti,c==you
 	--healing: restore max hp
-	if(ti == 1)c.hp,c.poison,c.confused=c.hp_max 
+	if(ti == 1)c.hp,c.poison,c.confused=c.hp_max
 	--poison: take damage for several
 	--turns
 	if(ti == 2)c.poison=rndint(9,5)
@@ -1820,7 +1820,7 @@ function scroll:on_use(c)
 	if(ti == 1)move_entity(c,rnd_pos(nil,-1))
 	if(ti == 2) gentable="item_table"
 	if(ti == 3) gentable="spawn_table"
-	if ti == 5 then	
+	if ti == 5 then
 		map_cursor_init(function(p)
 			launch(59,point(you.pos),p,
 			function(dst)
@@ -2609,8 +2609,11 @@ function menu_close_all()
 	end
 end
 
-function menu:add(name,op,trn)
-	self{name=name,op=op,turn=trn}
+function menu:add(name,op,trn,sprite)
+	self{name=name,
+		op=op,
+		turn=trn,
+		sprite=sprite}
 end
 
 function menu:open()
@@ -2624,19 +2627,26 @@ function menu:open()
 end
 
 function menu:draw()
-	local pos,w =self.pos,0
+	local pos,w =self.pos,19
 	foreach(self.values,
 	function(v)
 		w=max(w,#v.name*4+14)
 	end)
 	pos.w,pos.h=
 	w+6,
-	6*#self+12
+	10*#self+12
 	draw_border(pos)
 	for i=1,#self do
-		local dp = point(2,6*i+2)+pos
+		local dp,menuitem =
+		point(2,10*i+2)+pos,
+		self:get(i)
 		if(i==self.index)spr(31,dp:get_xy())
-		print(self:get(i).name,dp.x+9,dp.y,10)
+		if menuitem.sprite then
+			spr(menuitem.sprite,dp:get_xy)
+			dp.x+=10
+		else
+			print(self:get(i).name,dp.x+9,dp.y,10)
+		end
 		i+=1
 	end
 end
@@ -2750,10 +2760,11 @@ function inventory:update()
 				end)
 			end)
 			itm_menu:open()
-		end)
+		end,nil,itm.sprite)
 	end)
 end
 
+--[[
 function inventory:draw()
 	draw_border"56,20,19,88"
 	for i=1,min(#you.items,7) do
@@ -2763,6 +2774,7 @@ function inventory:draw()
 		print(itm.qty,69,y1+6,10)
 	end
 end
+--]]
 
 equip_menu=menu()
 function equip_menu:update()
@@ -2810,7 +2822,7 @@ function stats:update()
 	if(pstat)self:add(pstat,always_nil)
 end
 
-
+--[[
 function equip_menu:draw()
 	sspr(unpack"96,96,12,30,56,20")
 	spr(28,58,13+9*self.index)
@@ -2823,7 +2835,7 @@ function equip_menu:draw()
 		i+=9
 	end)
 end
-
+--]]
 --####### main controls #######--
 function default_ctrl()
 	for i=0,3 do
@@ -2954,7 +2966,7 @@ function _update()
 			high_scores[i]=max(score[i],dget(i))
 			dset(i,high_scores[i])
 		end
-	elseif btnp()!=0 and 
+	elseif btnp()!=0 and
 	not redraw then
 		if not title and #msg>0 then
 			msg_update()
@@ -3070,7 +3082,7 @@ function _draw()
 	--print memory use for debug
 	--draw_border"0,121,40,138"
 	--print(redraw,unpack"1,122,8")
-	--print(stat(0)..":"..frame,unpack"1,122,8")	
+	--print(stat(0)..":"..frame,unpack"1,122,8")
 end
 __gfx__
 12022201120220311202220111111111555155550000000000000000120222010122210000000000000000000000000000000000000000000000000000000000
@@ -3368,4 +3380,3 @@ __music__
 00 01004344
 00 41424344
 00 41424344
-
