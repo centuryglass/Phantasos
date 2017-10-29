@@ -93,7 +93,7 @@ level_structures=
 		"door,{3,0,2,4},{2,1,4,2},"..
 		"dungeon_floor,{3,1,2,2},{1,2},{6,1},{3,4},"..
 		"torch,{2,0},{5,0},"..
-		"ring,{6,1},"..
+		"def_ring,{6,1},"..
 		"statue,{3,4},"..
 		"watcher,{1,2}}},"..
 "{try=100,"..
@@ -144,6 +144,16 @@ level_structures=
 		"temple_floor,{0,0,3,3},"..
 		"floor_pedestal,{0,1,3,1},{1,0,1,3},"..
 		"statue,{1,1}}}"
+
+status="{sleep={s= fell asleep!,t= is fast asleep.,fn=slp_fn,e= woke up.},"..
+		"confused={s= looks unsteady.e='s vision clears},"..
+		"spectral={s= can walk through walls.,fn=spec_fn,e= is solid again.},"..
+		"poison={s= looks sick.,t= is hurt by poison.,fn=psn_fn,e= looks healthier.},"..
+		"haste={s= speeds up.,e= slows down.},"..
+		"blind={s= is blind!,e= can see again.},"..
+		"enlightened={s= can see everything.},"..
+		"tough={s= looks tougher.,e= looks vulnerable}}"
+
 
 
 --[[
@@ -348,7 +358,7 @@ end
 function is_numstr(str)
 	if is_string(str) and #str>0
 	and #str<6 and str != ".." then
-		log(str)
+		--log(str)
 		if(sub(str,1,2)=="0x" and #str>2)return true
 		for i=1,#str do
 			local char = chartable[sub(str,i,i)]
@@ -624,7 +634,7 @@ function parse(tokens)
 			tokens:pop(op_index+1),
 			tokens:pop(op_index+1),
 			parse(tokens:pop(op_index-1))
-			log(caller)
+			--log(caller)
 			tokens.values[op_index-1]=
 			caller[fn](caller,parse(args))
 		elseif op == "," then
@@ -640,7 +650,7 @@ function parse(tokens)
 				op_index-=1
 				caller=parse(tokens:pop(op_index))
 			end
-			if(is_string(caller))log(caller)
+			--if(is_string(caller))log(caller)
 			tokens.values[op_index]=
 			bracket_type=="(" and
 			(caller
@@ -1708,6 +1718,7 @@ function()
 	local addr=str_to_mem(draw_mapping,start_addr,"draw_mapping")
 	addr=str_to_mem(los_mapping,addr,"los_mapping")
 	addr=str_to_mem(level_structures,addr,"level_structures")
+	addr=str_to_mem(status,addr,"status effects")
 	cstore(0x2000,0x2000,addr-start_addr,cart_file)
 	menu_close()
 end)
@@ -1859,10 +1870,11 @@ function draw_mem_info()
 		w=max(w,#s*4+20)
 	end)
 	draw_border(rectangle(4,4,w,h))
-	parse"y=10"
+	local y=10
 	foreach(mem_info,function(s)
 		vars.s=s
-		parse"print(s,10,y,10),y+=8"
+		print(s,10,y,10)
+		y+=8"
 	end)
 end
 

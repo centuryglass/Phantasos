@@ -1,5 +1,5 @@
 pico-8 cartridge // http://www.pico-8.com
-version 10
+version 8
 __lua__
 --phantasos v.0.7
 --copyright anthony brown 2017
@@ -14,97 +14,91 @@ https://github.com/centuryglass/phantasos
 has the uncompressed code, if
 you're interested.
 --]]
- function log(af)printh(af,"log",not vj)vj=true end function always_true()return true end function always_nil()end kb="0123456789-.abcdefghijklmnopqrstuvwxyz,;_:(){}[]<>/?+=*|!#%&@$^"id={}for i=1,#kb do local c,n=sub(kb,i,i),i-1 id[n],id[c]=c,n end function fj(addr,len)local str=""for i=addr,addr+len-1 do str=str..id[peek(i)]end return str end function of(str)if wb(str)and#str>0 and#str<6 then for i=1,#str do local tf=id[sub(str,i,i)]
-if(not tf or tf>11)return
-end return true end end function xf(str)if sub(str,1,1)=="{"and sub(str,#str)=="}"then return sd(sub(str,2,#str-1))end 
-if(of(str))str+=0
+function always_true()return true end function always_nil()end kh="0123456789-.abcdefghijklmnopqrstuvwxyz,;_:(){}[]<>/?+=*|!#%&@$^"wi,ni={},{}for i=1,#kh do local c,n=sub(kh,i,i),i-1 wi[n],wi[c]=c,n end function hg(addr,len)local str=""for i=addr,addr+len-1 do str=str..wi[peek(i)]end return str end function vk(str)if lh(str)and#str>0 and#str<6 then for i=1,#str do local ff=wi[sub(str,i,i)]
+if(not ff or ff>11)return
+end return true end end function ub(str)if sub(str,1,1)=="{"and sub(str,#str)=="}"then return lb(sub(str,2,#str-1))end 
+if(vk(str))str+=0
 if(str=="false")return false
-if(str=="nil")return nil
-return(str=="true")and true or(str=="always_nil")and always_nil or(str=="always_true")and always_true or(str=="{}")and{}or kk[str]or str end function sd(str,tab)
-if(not wb(str))return str
-local i,kg,tab,val=0,"",tab or{},"null"local key,c while#str>0 do c,str=sub(str,1,1),sub(str,2)if c==","then 
-if(#kg>0)val=kg
-elseif c=="="then key,kg=xf(kg),""elseif c=="{"then local qe=1 for i=1,#str do local c2=sub(str,i,i)
-qe+=(c2=="{"and 1 or c2=="}"and-1 or 0)
-if qe==0 then val,str=c..sub(str,1,i),sub(str,i+1)break end end else kg=kg..c end 
-if(#str==0 and#kg>0 and val=="null")val=kg
-if val!="null"then val=xf(val)if key then tab[key]=val else add(tab,val)end key,val,kg=nil,"null",""end end if tab.addr then return sd(fj(pc(tab.addr),pc(tab.len)))end return tab end function pc(nf)return("0x"..nf)+0 end function je(str)local td,pi,jf,ee={},{},point(8,8),sd"{1,1},{-1,1},{1,-1},{-1,-1}"str=sd(str)foreach(str,function(ui)foreach(ee,function(q)local ag,nf={},""..ui 
-if(#nf%2==1)nf="0"..nf
-function fc()local rf=pc(sub(nf,1,1))nf=sub(nf,2)return rf end while#nf>1 do local pt=(point(fc(),fc())-jf)*point(xj(q))+jf if pt.x<16 and pt.y<16 then add(ag,pt)elseif#ag==0 then return end end local key=#ag[1]if not pi[key]then add(td,ag)pi[key]=true end end)end)return td end function ob(fn)local ub=cocreate(fn)ad(ub)coresume(ub)end function fb(co,gf)local n=#co for i=1,n do local ub=-co if costatus(ub)=="suspended"then coresume(ub)co(ub)
-if(not gf)return true
+if(str=="nil")return
+return(str=="true")and true or(str=="{}")and{}or ni[str]or di[str]or str end function lb(str,tab)
+if(not lh(str))return str
+local i,ng,tab,val=0,"",tab or{},"null"local key,c while#str>0 do c,str=sub(str,1,1),sub(str,2)if c==","then 
+if(#ng>0)val=ng
+elseif c=="="then key,ng=ub(ng),""elseif c=="{"then local wd=1 for i=1,#str do local c2=sub(str,i,i)
+wd+=(c2=="{"and 1 or c2=="}"and-1 or 0)
+if wd==0 then val,str=c..sub(str,1,i),sub(str,i+1)break end end else ng=ng..c end 
+if(#str==0 and#ng>0 and val=="null")val=ng
+if val!="null"then val=ub(val)if key then tab[key]=val else add(tab,val)end key,val,ng=nil,"null",""end end if tab.addr then return lb(hg(ag(tab.addr),ag(tab.len)))end return tab end function ag(sb)return("0x"..sb)+0 end function jh(str)local dd,of,fe,ug={},{},point"x=8,y=8",lb"{1,1},{-1,1},{1,-1},{-1,-1}"str=lb(str)foreach(str,function(jk)foreach(ug,function(ek)local xi,sb={},""..jk 
+if(#sb%2==1)sb="0"..sb
+function jc()local num=ag(sub(sb,1,1))sb=sub(sb,2)return num end while#sb>1 do local pt=(point(jc(),jc())-fe)*point(fk(ek))+fe if pt.x<16 and pt.y<16 then add(xi,pt)elseif#xi==0 then return end end local key=#xi[1]if not of[key]then add(dd,xi)of[key]=true end end)end)return dd end function ue(fn)local nh=cocreate(fn)xb(nh)coresume(nh)end function mk(co,dh)local n=#co for i=1,n do local nh=-co if costatus(nh)=="suspended"then coresume(nh)co(nh)
+if(not dh)return true
 end end 
-if(gf and#co>0)return true
-end function wb(bc)return type(bc)=="string"end function vi(bc)return type(bc)=="table"end function xj(t,index)t,index=sd(t),sd(index)or 1 local key=index if vi(index)then key=index[1]
+if(dh and#co>0)return true
+end function lh(lk)return type(lk)=="string"end function gj(lk)return type(lk)=="table"end function fk(t,index)t,index=lb(t),lb(index)or 1 local key=index if gj(index)then key=index[1]
 if(#index==0)return
 del(index,key)else 
 index+=1
 if(key>#t)return
-end return t[key],xj(t,index)end function kd(og,fn)for k,v in pairs(og)do 
+end return t[key],fk(t,index)end function ld(jf,fn)for k,v in pairs(jf)do 
 if(fn(v,k))return true
-end end function foreach(og,fn)for i in all(og)do 
+end end function foreach(jf,fn)for i in all(jf)do 
 if(fn(i))return true
-end end function rg(ik,a,b,c,d,e,f)assert(not f)local arr={a,b,c,d,e}if vi(ik)then foreach(ik,function(v)add(arr,v)end)else add(arr,ik)end return xj(arr)end function round(val)return flr(val)+(val%1>0.5 and 1 or 0)end function jb(wc,hc)hc,wc=hc or{},wb(wc)and sd(wc)or wc if wc then kd(wc,function(v,k)hc[k]=v end)end return hc end function hg(t,v)return kd(t,function(val)
+end end function zd(cg,a,b,c,d,e,f)assert(not f)local arr={a,b,c,d,e}if gj(cg)then foreach(cg,function(v)add(arr,v)end)else add(arr,cg)end return fk(arr)end function round(val)return flr(val)+(val%1>0.5 and 1 or 0)end function zf(mg,ih)ih,mg=ih or{},lh(mg)and lb(mg)or mg if mg then ld(mg,function(v,k)ih[k]=v end)end return ih end function oh(t,v)return ld(t,function(val)
 if(val==v)return true
-end)end function wg(yg,vb)vb=vb or 1 return vb+flr(rnd(1+yg-vb))end function rk(e)e=e.pos or e return lb>e and you:can_see(e)end function ci(p)return(p-lb)*8 end function fd(og,fn)
-if(not og)return true
-return og and kd(og,function(v,k)if rnd(1000)<v+j*k.flr_mult then 
+end)end function ob(mi,kd)kd=kd or 1 return mi<=kd and kd or kd+flr(rnd(1+mi-kd))end function wk(e)e=e.pos or e return tb>e and you:can_see(e)end function ck(p)return(p-tb)*8 end function hf(jf,fn)
+if(not jf)return true
+return jf and ld(jf,function(v,k)if rnd(1000)<v+qd*k.flr_mult then 
 if(fn(k))return true
-end end)end function ef(n1,n2)return(n1+n2)%1000 end function g(n1,n2)
+end end)end function we(n1,n2)return(n1+n2)%1000 end function ch(n1,n2)
 if(abs(n1-n2)>500)return n2<n1
-return n1<n2 end function tj(n1,n2)return n1==n2 or g(n1,n2)end function pj(f)
-if(hb)return
-f=f or ok ve=ve and(g(ve,f)and f or ve)or f end function fk()
-if(nk)return
-nk=true if hf<oi then p=oe(function(p,t)return t.spawn_table and not(lb>p)and not ei(p)end)if p then fd(qi(p).spawn_table,function(class)class(p)return true end)end end wf(function(e)if e.take_turn and tj(e.turn,turn)then e:take_turn()e.turn=ef(turn,1)end end)end function lk(t,n,fn)mg(cocreate(function()while turn!=ef(t,n)and n!=0 do 
-if(tj(t,turn))fn()n-=1
-yield()end end))end function qd(target,duration,qf,jc,ec,eg,bj)
-if(rk(target))sh(target,ec)
-lk(turn,duration,function()
-if(target.hp<=0)return
-if(rk(target))sh(target,eg)
-qf()end)lk(ef(turn,duration),1,function()
-if(target.hp<=0)return
-if(rk(target))sh(target,bj)
-jc()end)end function poison(target)qd(target,wg(9,5),
-function()target-=1 end,nil,
-nil," is hurt by poison."," recovers from poison.")end function sleep(target)
-if(target==you)vk=zh
-target.gi=true qd(target,wg(10,8),
-function()target+=1 end,
-function()
-if(target==you)vk=jd
-target.gi=false end," fell asleep."," is fast asleep."," woke up!.")end function use(itm,c)if itm.use then local fx=itm.use_sfx 
-if(c==you)msg(itm.use_msg)ue()
-if(fx and rk(c))sfx(fx)
-itm:use(c)if itm.qty then itm:dk(-1)end fk()return true end end kc,kk={},{}kc.class={kc}function kc:ld(ti)local pg={}setmetatable(pg,self.me)pg:tc(ti)return pg end function kc:sc(ti)local sc={}
-if(#ti==2)ti=fj(ti[1],ti[2])
-sc.xi={__index=self,__call=function(pb,ti)return sc:ld(ti)end,__lt=function(pb,x)return vi(x)and x.xd and hg(x.xd,pb)end}setmetatable(sc,sc.xi)sc.me=jb(self.me)sc.me.__index,sc.xd=sc,jb(self.xd)add(sc.xd,sc)jb(ti,sc)kk[sc.classname]=sc return sc end function kc:class()return self.xd[#self.xd]end function kc:tc(ti)jb(ti,self)end timer=kc:sc"classname=timer"timer.me.__call=function(self)if time()-self.start>.03 then yield()self.start=time()end end function timer:tc()self.start=time()end queue=kc:sc"classname=queue,length=0"jb({__unm=function(self)return self:hk()end,__call=function(self,n)self:ih(n)return self end,__len=function(self)return self.length end},queue.me)function queue:tc()self.values={}end function queue:ih(v)
+return n1<n2 end function wf(n1,n2)return n1==n2 or ch(n1,n2)end function ki(f)
+if(nd)return
+f=f or zg gf=gf and(ch(gf,f)and f or gf)or f end di={always_true=always_true,always_nil=always_nil,od=function(fg,t)
+if(t==-3)lf(fg," is fading back.")
+if t==0 and fb(fg.pos).solid then lf(fg," is stuck in a wall!")
+fg-=999
+end end,ud=function(fg,t)
+fg-=1
+end,ye=function(fg,t)if fg==you then rd=t==0 and uf or cc end end}wg=lb"addr=2c86,len=1a1"function sh()
+if(pk)return
+if you.yf then if you.t2 then you.t2=false else you.t2=true return end end pk=true if jj<lg then p=yj(function(p,t)return t.spawn_table and not(tb>p)and not yd(p)end)if p then hf(fb(p).spawn_table,function(class)class(p)return true end)end end vg(function(e)if e.take_turn and wf(e.turn,turn)then ld(wg,function(hi,u)local nk,fn=e[u],hi.fn if nk then if nk>0 then lf(e,hi.s)
+nk*=-1
+end 
+if(fn)fn(e,nk)
+lf(e,hi.t)e[u]=nk<0 and nk+1 
+if(nk==0)lf(e,hi.e)
+end end)
+if(not e.sleep)e:take_turn()
+e.turn=we(turn,1)end end)end function use(itm,c)if itm.use then local fx=itm.use_sfx 
+if(c==you)msg(itm.use_msg)ze()
+if(fx and wk(c))sfx(fx)
+itm:use(c)if itm.qty then itm:bk(-1)end sh()return true end end jd={}jd.class={jd}function jd:bj(ie)local xf={}setmetatable(xf,self.xj)xf:ri(ie)return xf end function jd:gh(ie)local gh={}gh.fc={__index=self,__call=function(af,ie)return gh:bj(ie)end,__lt=function(af,x)return gj(x)and x.tc and oh(x.tc,af)end}setmetatable(gh,gh.fc)gh.xj=zf(self.xj)gh.xj.__index,gh.tc=gh,zf(self.tc)add(gh.tc,gh)zf(ie,gh)ni[gh.classname]=gh return gh end function jd:class()return self.tc[#self.tc]end function jd:ri(ie)zf(ie,self)end timer=jd:gh"classname=timer"timer.xj.__call=function(self)if time()-self.start>.03 then yield()self.start=time()end end function timer:ri()self.start=time()end queue=jd:gh"classname=queue,length=0"zf({__unm=function(self)return self:sg()end,__call=function(self,n)self:ee(n)return self end,__len=function(self)return self.length end},queue.xj)function queue:ri()self.values={}end function queue:ee(v)
 if(v)self.length+=1 self.values[#self]=v
 end function queue:get(i)
 if(i<=#self)return self.values[i]
-end function queue:hk()local be=self:get(1)if be then for i=2,#self do self.values[i-1],self.values[i]=self:get(i),nil end 
+end function queue:sg()local ig=self:get(1)if ig then for i=2,#self do self.values[i-1],self.values[i]=self:get(i),nil end 
 self.length-=1
-return be end end function queue:clear()jb("values={},length=0",self)end stack=queue:sc"classname=stack"function stack:hk()local ze=self:get(#self)if ze then self.values[#self]=nil 
+return ig end end function queue:gg()zf("values={},length=0",self)end stack=queue:gh"classname=stack"function stack:sg()local qk=self:get(#self)if qk then self.values[#self]=nil 
 self.length-=1
-return ze end end p_queue=queue:sc"classname=p_queue"p_queue.me.__call=function(self,v,p)self:ih(v,p)end function p_queue:ih(bc,p)local yf={value=bc,yj=p}
+return qk end end p_queue=queue:gh"classname=p_queue"p_queue.xj.__call=function(self,v,p)self:ee(v,p)end function p_queue:ee(lk,p)local he={value=lk,xc=p}
 self.length+=1
-for i=1,#self do local ij=self:get(i)if not ij or yf.yj<ij.yj then yf,self.values[i]=ij,yf end end end function p_queue:hk()local be=queue.hk(self)return be and be.value end rnd_queue=queue:sc"classname=rnd_queue"function rnd_queue:hk()
+for i=1,#self do local mf=self:get(i)if not mf or he.xc<mf.xc then he,self.values[i]=mf,he end end end function p_queue:sg()local ig=queue.sg(self)return ig and ig.value end rnd_queue=queue:gh"classname=rnd_queue"function rnd_queue:sg()
 if(#self<1)return
-val=self:get(wg(#self))del(self.values,val)
+val=self:get(ob(#self))del(self.values,val)
 self.length-=1
-return val end point=kc:sc"classname=point,x=0,y=0"point.xi.__call=function(self,x,y)return point:ld()(x,y)end jb({__call=function(self,x,y)if wb(x)then sd(x,self)elseif point<x then self(x:nj())else self.x,self.y=round(x),round(y)end return self end,__add=function(zi,hj)return point(zi.x+hj.x,zi.y+hj.y)end,__sub=function(zi,hj)return point(zi.x-hj.x,zi.y-hj.y)end,__mul=function(pt,n)local x,y=n,n 
-if(point<n)x,y=n:nj()
-return point(pt.x*x,pt.y*y)end,__div=function(pt,n)return pt*(1/n)end,__unm=function(pt)return point(pt)end,__eq=function(zi,hj)return zi.x==hj.x and zi.y==hj.y end,__len=function(pt)return pt:gg()end,__lt=function(pt,r)return rectangle(pt)<r end},point.me)function point:move(d,n)n=n or 1 local ax=d<2 and"x"or"y"
+return val end point=jd:gh"classname=point,x=0,y=0"point.fc.__call=function(self,x,y)return point:bj()(x,y)end zf({__call=function(self,x,y)if lh(x)then lb(x,self)elseif point<x then self(x:xd())else self.x,self.y=round(x),round(y)end return self end,__add=function(mc,gk)return point(mc.x+gk.x,mc.y+gk.y)end,__sub=function(mc,gk)return point(mc.x-gk.x,mc.y-gk.y)end,__mul=function(pt,n)local x,y=n,n 
+if(point<n)x,y=n:xd()
+return point(pt.x*x,pt.y*y)end,__div=function(pt,n)return pt*(1/n)end,__unm=function(pt)return point(pt)end,__eq=function(mc,gk)return mc.x==gk.x and mc.y==gk.y end,__len=function(pt)return pt:kg()end,__lt=function(pt,r)return rectangle(pt)<r end},point.xj)function point:move(d,n)n=n or 1 local ax=d<2 and"x"or"y"
 if(d%2==0)n*=-1
 self[ax]+=n
-return self end function point:md(p2)local ay,ax=(p2-self):nj()ay,ax=abs(ay),abs(ax)return max(ay,ax)+min(ay,ax)/2 end function point:uc(mi,xe)
-if(xe==0)return-self
-mi,xe=mi or point(0,0),xe or 1 local vg=self-mi vg(-vg.y,vg.x)
-vg+=mi
-return vg:uc(mi,xe-1)end function point:nj()return self.x,self.y end function point:gg()return"x="..self.x..",".."y="..self.y end rectangle=point:sc("classname=rectangle")rectangle.xi.__call=function(self,x,y,w,h)return self:ld()(x,y,w,h)end jb({__call=function(self,a,b,c,d)
+return self end function point:ic(p2)local ay,ax=(p2-self):xd()ay,ax=abs(ay),abs(ax)return max(ay,ax)+min(ay,ax)/2 end function point:vb(cb,oe)
+if(oe==0)return-self
+cb,oe=cb or point"x=0,y=0",oe or 1 local hb=self-cb hb(-hb.y,hb.x)
+hb+=cb
+return hb:vb(cb,oe-1)end function point:xd()return self.x,self.y end function point:kg()return"x="..self.x..",".."y="..self.y end rectangle=point:gh("classname=rectangle")rectangle.fc.__call=function(self,x,y,w,h)return self:bj()(x,y,w,h)end zf({__call=function(self,a,b,c,d)
 if(not a)return self"0,0,1,1"
-if(wb(a))return self(xj(a))
-if rectangle<a then jb(a,self)elseif point<a then local w,h=1,1 if point<b then w,h=(b-a):nj()elseif c then w,h=b,c end self(a.x,a.y,w,h)else self.x,self.y,self.w,self.h=a,b,c,d end return self end,__add=function(r,pt)local r2=-r 
+if(lh(a))return self(fk(a))
+if rectangle<a then zf(a,self)elseif point<a then local w,h=1,1 if point<b then w,h=(b-a):xd()elseif c then w,h=b,c end self(a.x,a.y,w,h)else self.x,self.y,self.w,self.h=a,b,c,d end return self end,__add=function(r,pt)local r2=-r 
 r2.x+=pt.x
 r2.y+=pt.y
 return r2 end,__sub=function(r,pt)local r2=-r 
@@ -113,7 +107,7 @@ r2.y-=pt.y
 return r2 end,__mul=function(r,n)local r2=-r 
 r2.w*=n
 r2.h*=n
-return r2 end,__div=function(r,n)return r*(1/n)end,__eq=function(r1,r2)return r1:p1()==r2:p1()and r1:p2()==r2:p2()end,__len=function(r)return r.w*r.h end,__lt=function(r1,r2)return r1.x+r1.w<=r2.x+r2.w and r1.y+r1.h<=r2.y+r2.h and r1.x>=r2.x and r1.y>=r2.y end,__unm=function(r)return rectangle(r)end},rectangle.me)function rectangle:expand(n,d)n=n or 1 if d then local xy,wh=d%2==0,d<=1 and"w"or"h"if xy then if wh=="w"then 
+return r2 end,__div=function(r,n)return r*(1/n)end,__eq=function(r1,r2)return r1:p1()==r2:p1()and r1:p2()==r2:p2()end,__len=function(r)return r.w*r.h end,__lt=function(r1,r2)return r1.x+r1.w<=r2.x+r2.w and r1.y+r1.h<=r2.y+r2.h and r1.x>=r2.x and r1.y>=r2.y end,__unm=function(r)return rectangle(r)end},rectangle.xj)function rectangle:zj(n,d)n=n or 1 if d then local xy,wh=d%2==0,d<=1 and"w"or"h"if xy then if wh=="w"then 
 self.x-=n
 else 
 self.y-=n
@@ -125,252 +119,247 @@ self.y-=n
 n*=2
 self.w+=n
 self.h+=n
-end return self end function rectangle:uc(mi,xe)xe=xe or 1 local r=-self 
-if(xe==0)return self
-r.w,r.h=r.h,r.w r.x,r.y=r:p1():uc(mi):nj()
+end return self end function rectangle:vb(cb,oe)oe=oe or 1 local r=-self 
+if(oe==0)return self
+r.w,r.h=r.h,r.w r.x,r.y=r:p1():vb(cb):xd()
 r.x-=r.w-1
-return r:uc(mi,xe-1)end function rectangle:p1()return point(self:nj())end function rectangle:p2()return point(self.w,self.h)+self end function rectangle:z()return self.x,self.y,self:p2():nj()end function rectangle:gg()return#self:p1()..","..#self:p2()end function yi()cf,tk,th,oh={},{},rectangle"0,0,30,30",rectangle"1,1,28,28"nb(function(p)cf[#p]=void end)end function ni(p)return oh>p end function qi(p)return cf[#p]end function ug(p,t)if th>p then t.kf=qi(p).kf cf[#p]=t end end function nd(e)local key=#e.pos if tk[key]then add(tk[key],e)else tk[key]={e}end 
-if(e.qc)e:qc()
-if(creature<e)hf+=1
-if(lb>e.pos)pj()
-end function ei(pos)return tk[#pos]end function jg(pos)for e in all(tk[#pos])do 
+return r:vb(cb,oe-1)end function rectangle:p1()return point(self:xd())end function rectangle:p2()return point(self.w,self.h)+self end function rectangle:ke()return self.x,self.y,self:p2():xd()end function xk()nc,hj,ve,ei={},{},rectangle"0,0,30,30",rectangle"1,1,28,28"oi(function(p)nc[#p]=void end)end function vh(p)return ei>p end function fb(p)return nc[#p]end function fh(p,t)if ve>p then t.lights=fb(p).lights nc[#p]=t end end function pb(e)local key=#e.pos if hj[key]then add(hj[key],e)else hj[key]={e}end 
+if(creature<e)jj+=1
+if(tb>e.pos)ki()
+if(e.md)e:md()
+end function yd(pos)return hj[#pos]end function qj(pos)for e in all(hj[#pos])do 
 if(creature<e)return e
-end end function ib(e,fg)if e.pos then local key=#e.pos if tk[key]then del(tk[key],e)
-if(#tk[key]==0)tk[key]=nil
-if(creature<e)hf-=1
-if(lb>e.pos)pj()
-if not fg then 
-if(e.ye)e:ye()
+end end function dk(e,je)if e.pos then local key=#e.pos if hj[key]then del(hj[key],e)
+if(#hj[key]==0)hj[key]=nil
+if(creature<e)jj-=1
+if(tb>e.pos)ki()
+if not je then 
+if(e.pe)e:pe()
 if(e!=you)e.pos=nil
-end end end end function ri(e,pos)ib(e,true)e.pos(pos)nd(e)end function nc(r,type)type=type or void local zf=true gc(function(p,t)
-if(not(type<t))zf=false return true
-end,r)return zf end function nb(fn,uh)uh=uh or th for y=uh.y,uh.y+uh.h-1 do for x=uh.x,uh.x+uh.w-1 do 
+end end end end function be(e,pos)dk(e,true)e.pos(pos)pb(e)end function id(r,type)type=type or void local qb=true ui(function(p,t)
+if(not(type<t))qb=false return true
+end,r)return qb end function oi(fn,oc)oc=oc or ve for y=oc.y,oc.y+oc.h-1 do for x=oc.x,oc.x+oc.w-1 do 
 if(fn(point(x,y)))return true
-end end end function gc(fn,uh)nb(function(p)local t=qi(p)
+end end end function ui(fn,oc)oi(function(p)local t=fb(p)
 if(t and fn(p,t))return true
-end,uh)end function wf(fn,uh)local lf={}function cc(arr)foreach(arr,function(e)add(lf,e)end)end if uh then nb(function(p)cc(ei(p))end,uh)else kd(tk,cc)end return foreach(lf,fn)end function vh(pos,fn,yh,fh)local vd=rectangle(pos):expand(1)gc(function(p,t)
-if(p!=pos or fh)
-and(not yh or p.x==pos.x or p.y==pos.y)then return fn(p,t)end end,vd)end function wi(p1,p2,cd)local jf=point(8,8)-p1 local rel=p2+jf 
-if(not vf[#rel])return p1
-for di in all(vf[#rel])do 
-di-=jf
-local t=qi(di)
-if(t and t.solid)return di
-if(cd and jg(di))return di
-end end function los(p1,p2)return not wi(p1,p2)end function sj(pos,class,yh)local dd=0 vh(pos,function(p,t)if class<t then 
-dd+=1
-end end,yh)return dd end function qg(wc,hc,bg,range)local mf,yc,uf,gh,bg,range,sk,qk={[#wc]={ic=0,yj=0}},p_queue(),999,timer(),bg or function(pos,tile)
+end,oc)end function vg(fn,oc)local hd={}function gd(arr)foreach(arr,function(e)add(hd,e)end)end if oc then oi(function(p)gd(yd(p))end,oc)else ld(hj,gd)end return foreach(hd,fn)end function ci(pos,fn,bi,tg)local mj=rectangle(pos):zj(1)ui(function(p,t)
+if(p!=pos or tg)
+and(not bi or p.x==pos.x or p.y==pos.y)then return fn(p,t)end end,mj)end function ji(p1,p2,ej)local fe=point"x=8,y=8"-p1 local rel=p2+fe 
+if(not mb[#rel])return p1
+for se in all(mb[#rel])do 
+se-=fe
+local t=fb(se)
+if(t and t.solid)return se
+if(ej and qj(se))return se
+end end function los(p1,p2)return not ji(p1,p2)end function uj(pos,class,bi)local bc=0 ci(pos,function(p,t)if class<t then 
+bc+=1
+end end,bi)return bc end function mh(mg,ih,kj,range)local g,qf,ad,rf,kj,range,hh,lc={[#mg]={vj=0,xc=0}},p_queue(),999,timer(),kj or function(pos,tile)
 if(not tile.solid)return 0
-end,range or 0 yc(#wc,0)while#yc>0 do gh()local ud=-yc if point(ud):md(hc)<uf+5 and stat(0)<1000 then vh(point(ud),function(p,t)local eh,ic,l=#p,mf[ud].ic+1,p:md(hc)local yj=l<=range and 0 or(not mf[eh]or mf[eh].ic>ic)and l<=uf+5 and bg(p,t,hc,ic,mf,ud)if yj then mf[eh]={ic=ic,kj=ud}
-if(l<uf)uf,sk=l,eh
-if l<=range then qk=eh return true end 
-yj+=l+ic
-yc(eh,yj)end end,true)
-if(qk)yc:clear()
-end end local path,i=stack(),qk or sk while i and mf[i].kj do path(point(i))i=mf[i].kj end return#path>0 and path end function hd(r,class)nb(function(p)ug(p,class())end,r)end function oe(he)he=he or function(p,t)return not t.solid and not ei(p)end local ff=rnd_queue()for i=1,784 do ff("x="..(i%28+1)..",y="..flr(i/28+1))end while#ff>0 do local pos=point(-ff)
-if(he(pos,qi(pos)))return pos
-end end function uk(e,wc,hc,oj)hc=wi(wc,hc,true)or hc local pf,jf=ci(wc),(hc-wc)*2 sf(cocreate(function()for i=1,4 do 
-pf+=jf
-e:draw(pf)yield()end 
-if(oj)oj(hc)
-end))end entity=kc:sc"classname=entity,name=entity,color=8,sprite=93,flr_mult=0"function entity:tc(pos)if pos then self.pos=point(pos)nd(self)end end function entity:can_see(pos)local t,p=qi(pos),self.pos return pos==p or(p:md(pos)<=self.sight_rad or t.kf)and los(p,pos)end function entity:draw(pf)pf=pf or ci(self.pos)
-if(self.ai)pal(12,self.ai)
-spr(self.ah or self.sprite,pf:nj())pal()local weapon=self.hi and self.hi.weapon 
-if(weapon)weapon:draw(pf+point(2,0))
-if self.ah then pj(ef(ok,8))self.ah=nil end end item=entity:sc"classname=item,sprite=108,name=item,qty=1,throw_sfx=6"function item:tc(ti)if creature<ti then ti:take(self)elseif point<ti then entity.tc(self,ti)end if self:class()<ti then jb(ti,self)self.ie,self.pos=nil end end function item:dk(qty)
+end,range or 0 qf(#mg,0)while#qf>0 and stat(0)<1000 do rf()local re=-qf if point(re):ic(ih)<ad+5 and stat(0)<1000 then ci(point(re),function(p,t)local de,vj,ef=#p,g[re].vj+1,p:ic(ih)local xc=ef<=range and 0 or(not g[de]or g[de].vj>vj)and ef<=ad+5 and kj(p,t,ih,vj,g,re)if xc then g[de]={vj=vj,ph=re}
+if(ef<ad)ad,hh=ef,de
+if ef<=range then lc=de return true end 
+xc+=ef+vj
+qf(de,xc)end end,true)
+if(lc)qf:gg()
+end end local path,i=stack(),lc or hh while i and g[i].ph do path(point(i))i=g[i].ph end return#path>0 and path end function qi(r,class)oi(function(p)fh(p,class())end,r)end function yj(zh)zh=zh or function(p,t)return not t.solid and not yd(p)end local yc=rnd_queue()for i=1,784 do yc("x="..(i%28+1)..",y="..flr(i/28+1))end while#yc>0 do local pos=point(-yc)
+if(zh(pos,fb(pos)))return pos
+end end function sc(sprite,mg,ih,tf,rb)ih=ji(mg,ih,true)or ih local jb,fe=ck(mg),(ih-mg)*2 df(cocreate(function()for i=1,4 do 
+jb+=fe
+if(rb)pal(12,rb)
+spr(sprite,jb:xd())yield()end tf(ih)end))end entity=jd:gh"classname=entity,name=entity,sprite=93,flr_mult=0"function entity:ri(pos)if pos then self.pos=-pos pb(self)end end function entity:can_see(pos)local t,p=fb(pos),self.pos return pos==p or(p:ic(pos)<=self.sight_rad or t.lights and not self.blind)and los(p,pos)end function entity:draw(jb)jb=jb or ck(self.pos)
+if(self.rb)pal(12,self.rb)
+spr(self.le or self.sprite,jb:xd())pal()local weapon=self.ij and self.ij.weapon 
+if(weapon)weapon:draw(jb+point"x=2,y=0")
+if self.le then ki(we(zg,4))self.le=nil end end item=entity:gh"classname=item,sprite=108,name=item,qty=1,throw_sfx=6"function item:ri(ie)if creature<ie then ie:take(self)elseif point<ie then entity.ri(self,ie)elseif ie then zf(ie,self)self.holder,self.pos=nil end end function item:bk(qty)
 self.qty+=qty
-if self.qty<=0 then if self.ie then del(self.ie.pe,self)end ib(self)self.ie,self.pos=nil end end meat=item:sc"classname=meat,sprite=70,name=meat,color=14,hp_boost=5,flr_mult=3,use_msg=you feel much better.,use_sfx=5"function meat:use(c)
+if self.qty<=0 then if self.holder then del(self.holder.rc,self)end dk(self)zf("holder=nil,pos=nil",self)end end meat=item:gh"classname=meat,sprite=70,name=meat,hp_boost=5,flr_mult=3,use_msg=you feel much better.,use_sfx=5"function meat:use(c)
 c+=self.hp_boost
-end apple=meat:sc"classname=apple,sprite=71,name=apple,color=8,hp_boost=3,use_msg=you feel a bit better.,flr_mult=-1"bread=meat:sc"classname=bread,sprite=72,name=bread,color=8,hp_boost=6,flr_mult=3"statue=item:sc"classname=statue,sprite=74,name=statue,color=10"function statue:qc()qi(self.pos).solid=true end function statue:ye()local t=qi(self.pos)t.solid=t:class().solid end color_coded_itm=item:sc"classname=color_coded_itm"function color_coded_itm:si()self.ki,self.od=#self.names,{}local od=rnd_queue()kd(self.colors,function(v,k)od{name=v.." "..self.classname,color=k}end)for i=1,self.ki do local type=-od type.gd,type.use_msg,self.od[i]=self.names[i].." "..self.classname,self.messages[i],type end end function color_coded_itm:tc(ti)item.tc(self,ti)if not self.type then self.type=wg(self.ki)local type=self.od[self.type]self.name,self.use_msg,self.ai=type.name,type.use_msg,type.color end end function color_coded_itm:use(c)local od=self:class().od local type=od[self.type]local name,gd=self.name,type.gd if rk(c)and name!=gd then function lj(i)
-if(i.name==name)i.name=gd
-end lj(type)wf(function(e)lj(e)if e.pe then foreach(e.pe,function(i)lj(i)end)end end)msg("that was a "..gd)end self:rj(c)end potion=color_coded_itm:sc"classname=potion,sprite=65,color=13,use_sfx=4,throw_sfx=7,flr_mult=3,names={1=healing,2=vision,3=poison,4=wisdom,5=sleep,6=lethe,7=water,8=juice,9=spectral,10=toughness,11=blindness},messages={1=you are healed,2=you see everything!,3=you feel sick,4=you feel more experienced,5=you fell asleep,6=where are you?,7=refreshing!,8=yum,9=you feel ghostly,10=nothing can hurt you now!,11=who turned out the lights?},colors={0=murky,1=viscous,2=fizzing,3=grassy,4=umber,5=ashen,6=smoking,7=milky,8=bloody,9=orange,10=glowing,11=lime,12=sky,13=reeking,14=fragrant,15=bland}"potion:si()function potion:rj(c)local type,ge,ii=self.type,c==you,wg(10,4)
-if(type==1)c.hp=c.hp_max
-if type==2 then 
-if(ge)we=true
-c.can_see=always_true qd(c,wg(5,2),nil,function()c.can_see=nil we=false end,"'s perception expands.",nil,"'s vision returns to normal")end 
-if(type==3)poison(c)
-if(type==4)c.exp=flr((c.exp+10)*1.5)
-if(type==5)sleep(c)
-if type==6 then 
-if(not ge)return
-gc(function(p,t)t.dj=nil end)end 
-if(type==8)c+=2
-if type==9 then c.spectral=true local start,duration=turn,wg(20,10)qd(c,duration,function()
-if(turn==ef(start,duration-3))sh(c," is fading back.")
-end,function()c.spectral=nil if qi(c.pos).solid then sh(c," is stuck in a wall!")
-c-=999
-end end," can walk through walls.",nil," is solid again.")end if type==10 then 
-c.ac+=999
-qd(c,wg(7,3),
-nil,function()c.ac-=999 end,
-" is invincible!",nil," looks vulnerable.")end if type==11 then c.can_see=always_nil qd(c,wg(12,8),nil,function()c.can_see=nil end," is blind!",nil," can see again.")end end function potion:oc(pos)sh(self," shatters!")vh(pos,function(p,t)local c=jg(p)
+end apple=meat:gh"classname=apple,sprite=71,name=apple,hp_boost=3,use_msg=you feel a bit better.,flr_mult=-1"bread=meat:gh"classname=bread,sprite=72,name=bread,hp_boost=6,flr_mult=3"statue=item:gh"classname=statue,sprite=74,name=statue"function statue:md()if nd and rnd(100)<qd-2 then sentinel(-self.pos):take(self)else fb(self.pos).solid=true end end function statue:pe()local t=fb(self.pos)t.solid=t:class().solid end color_coded_itm=item:gh"classname=color_coded_itm"function color_coded_itm:ii()local colors=rnd_queue()ld(self.colors,function(name,sk)colors{name=name.." "..self.classname,rb=sk}end)for i=1,#self.types do local c=-colors zf(c,self.types[i])end end function color_coded_itm:ri(ie)item.ri(self,ie)if not self.ti then zf(self.types[ob(#self.types)],self)end end function color_coded_itm:use(c)local ti,name,nb,yb=fk(self,"ti,name,r_name,classname")nb=nb.." "..yb if wk(c)and name!=nb then function aj(i)
+if(i.name==name)i.name=nb
+end aj(self.types[ti])vg(function(e)aj(e)if e.rc then foreach(e.rc,function(i)aj(i)end)end end)msg("that was a "..nb)end self:oj(c)end potion=color_coded_itm:gh"flr_mult=3,sprite=65,throw_sfx=7,use_sfx=4,classname=potion,types={{r_name=healing,use_msg=you are healed,ti=1},{r_name=poison,use_msg=you feel sick,ti=2},{r_name=wisdom,use_msg=you feel more experienced,ti=3},{r_name=sleep,use_msg=you fell asleep,ti=4},{r_name=lethe,use_msg=where are you?,ti=5},{r_name=water,use_msg=refreshing!,ti=6},{r_name=juice,use_msg=yum,ti=7},{r_name=spectral,use_msg=you feel ghostly,ti=8},{r_name=toughness,use_msg=nothing can hurt you now!,ti=9},{r_name=blindness,use_msg=who turned out the lights?,ti=10},{r_name=speed,use_msg=the world slows down.,ti=11}},colors={1=viscous,2=fizzing,3=grassy,4=umber,5=ashen,6=smoking,7=milky,8=bloody,9=orange,10=glowing,11=lime,12=sky,13=reeking,14=fragrant,15=bland,0=murky}"potion:ii()function potion:oj(c)local ti,si=self.ti,c==you 
+if(ti==1)c.hp,c.poison,c.vc=c.hp_max
+if(ti==2)c.poison=ob(9,5)
+if(ti==3)c.exp=flr((c.exp+10)*1.5)
+if(ti==4)c.sleep=ob(15,8)
+if ti==5 then zf("target=nil,path=nil",c)if c==you then ui(function(p,t)t.sf=nil end)end end 
+if(ti==7)c+=2
+if(ti==8)c.spectral=ob(20,10)
+if(ti==9)c.tough=ob(7,3)
+if(ti==10)c.blind=ob(12,8)
+if(ti==11)c.yf=ob(20,4)
+end function potion:kf(pos)lf(self," shatters!")ci(pos,function(p,t)local c=qj(p)
 if(c)self:use(c)
-self.sprite=60 sf(cocreate(function()for i=1,3 do self:draw(ci(p))yield()end end))end,false,true)ib(self)end mushroom=color_coded_itm:sc"classname=mushroom,sprite=67,use_sfx=5,color=4,names={1=tasty,2=disgusting,3=deathcap,4=magic},messages={1=that was delicious,2=that was awful,3=you feel deathly ill,4=look at the colors!},colors={1=speckled,3=moldy,6=chrome,8=bleeding,14=lovely,15=fleshy}"mushroom:si()function mushroom:rj(c)local type=self.type 
-if(type==1)c+=10
-if(type==2)c-=1
-if(type==3)c.hp=1
-if type==4 then c.fe=true qd(c,wg(15,4),nil,function()c.fe=false end," looks unsteady.",nil,"'s vision clears.")end end scroll=color_coded_itm:sc"classname=scroll,sprite=66,use_sfx=3,flr_mult=2,names={1=movement,2=wealth,3=summoning},messages={1=you are somewhere else,2=riches appear around you,3=you have company!},colors={0=filthy,1=denim,4=tattered,6=faded,8=ominous}"scroll:si()function scroll:rj(c)local type=self.type local ch 
-if(type==1)ri(c,oe(nil,-1))
-if(type==2)ch="item_table"
-if(type==3)ch="spawn_table"
-if ch then vh(c.pos,function(p,t)while not fd(t[ch],function(class)if class!=scroll then class(p)return true end end)do end end)end end equipment=item:sc"classname=equipment,bonuses={hitbonus=1}"function equipment:equip(c)local equip_slot,itm=self.equip_slot,c:drop(self,1,point(99,99))local hi=c.hi[equip_slot]
-if(hi)hi:remove()
-kd(self.bonuses,function(v,k)
+self.sprite=60 df(cocreate(function()for i=1,3 do self:draw(ck(p))yield()end end))end,false,true)dk(self)end mushroom=color_coded_itm:gh"use_sfx=5,classname=mushroom,sprite=67,types={{r_name=tasty,use_msg=that was delicious,ti=1},{r_name=disgusting,use_msg=that was awful,ti=2},{r_name=deathcap,use_msg=you feel deathly ill,ti=3},{r_name=magic,use_msg=look at the colors!,ti=4}},colors={0=speckled,14=lovely,8=bleeding,6=chrome,3=moldy,15=fleshy}"mushroom:ii()function mushroom:oj(c)local ti=self.ti 
+if(ti==1)c+=10
+if(ti==2)c-=1
+if(ti==3)c.hp=1
+if(ti==4)c.vc=ob(15,4)
+end scroll=color_coded_itm:gh"use_sfx=3,flr_mult=2,classname=scroll,sprite=66,types={{r_name=movement,use_msg=you are somewhere else,ti=1},{r_name=wealth,use_msg=riches appear around you,ti=2},{r_name=summoning,use_msg=you have company!,ti=3},{r_name=magic mapping,use_msg=you know your surroundings.,ti=4},,{r_name=firebolt,use_msg=the scroll sends out fire.,ti=5}},colors={1=denim,0=filthy,3=mossy,4=tattered,8=ominous,6=faded}"scroll:ii()function scroll:oj(c)local ti=self.ti local yi 
+if(ti==1)be(c,yj(nil,-1))
+if(ti==2)yi="item_table"
+if(ti==3)yi="spawn_table"
+if ti==5 then xh(function(p)sc(59,point(you.pos),p,function(ih)local fg=qj(ih)
+if(fg)you:bg(fg,fg.hp)
+end)end)end if yi then ci(c.pos,function(p,t)while not hf(t[yi],function(class)if class!=scroll then class(p)return true end end)do end end)end if ti==4 then ui(function(p,t)t.sf=true end)end end equipment=item:gh"classname=equipment,bonuses={hitbonus=1}"function equipment:equip(c)local equip_slot,itm=self.equip_slot,c:drop(self,1,point"x=99,y=99")local ij=c.ij[equip_slot]
+if(ij)ij:remove()
+ld(self.bonuses,function(v,k)if type(v)=="number"then 
 c[k]+=v
-end)ib(itm)c.hi[equip_slot],itm.ie=itm,c end function equipment:remove()local ie=self.ie ie.hi[self.equip_slot]=nil kd(self.bonuses,function(v,k)
-ie[k]-=v
-end)ie:drop(self)ie:take(self)end torch=equipment:sc"classname=torch,sprite=64,name=torch,sight_rad=4,color=10,equip_slot=weapon,bonuses={sight_rad=1,dmin_boost=1,dmax_boost=1}"function torch:se(fn)local ke=rectangle(self.pos):expand(self.sight_rad)gc(function(p,t)if p:md(self.pos)<self.sight_rad and los(self.pos,p)then fn(p,t)end end,ke)end function torch:qc()self:se(function(p,t)if not(void<t)then t.kf=t.kf and t.kf+1 or 1 end end)end function torch:ye()self:se(function(p,t)
-if(t.kf)t.kf-=1
-if(t.kf==0)t.kf=nil
-end)end knife=equipment:sc"classname=knife,sprite=68,name=knife,color=6,equip_slot=weapon,throw_sfx=8,dthrown=4,flr_mult=5,bonuses={hit_boost=5,dmin_boost=1,dmax_boost=2}"sword=knife:sc"classname=sword,sprite=69,name=sword,color=6,equip_slot=weapon,dthrown=3,flr_mult=1,bonuses={hit_boost=-10,dmin_boost=3,dmax_boost=6}"tomahawk=knife:sc"classname=tomahawk,sprite=73,name=tomahawk,equip_slot=weapon,dthrown=8,flr_mult=1,bonuses={hit_boost=5,dmin_boost=1,dmax_boost=1}"plate_armor=equipment:sc"classname=plate_armor,sprite=75,name=plate armor,equip_slot=armor,flr_mult=1,bonuses={ac=3}"leather_armor=equipment:sc"classname=leather_armor,sprite=76,name=leather armor,equip_slot=armor,flr_mult=2,bonuses={ac=1}"spiked_armor=equipment:sc"classname=spiked_armor,sprite=77,name=spiked armor,equip_slot=armor,flr_mult=2,bonuses={ac=2,dmin_boost=2}"warded_armor=equipment:sc"classname=warded_armor,sprite=78,name=warded armor,equip_slot=armor,flr_mult=1,bonuses={ac=6}"ring=equipment:sc"classname=ring,sprite=80,name=ring,equip_slot=rings,flr_mult=5,bonuses={ac=1}"creature=entity:sc"classname=creature,sight_rad=4,hp_max=10,exp=2,hitrate=75,min_dmg=0,max_dmg=4,ac=0,dmax_boost=0,dmin_boost=0,hit_boost=0"jb({__add=function(self,x)self:le(x)return self end,__sub=function(self,x)self:le(-x)return self end},creature.me)function creature:tc(ti)entity.tc(self,ti)self.hp,self.turn,self.pe,self.hi=self.hp_max,turn,{},{}
-if(self.item_table)self:wj()
-end function creature:wj()fd(self.item_table,function(class)local itm=class(self)
+else c[k]=v end end)dk(itm)c.ij[equip_slot],itm.holder=itm,c end function equipment:remove()local holder=self.holder holder.ij[self.equip_slot]=nil ld(self.bonuses,function(v,k)if type(v)==number then 
+holder[k]-=v
+else holder[k]=holder:class()[k]end end)holder:drop(self)holder:take(self)end torch=equipment:gh"classname=torch,sprite=64,name=torch,sight_rad=4,equip_slot=weapon,bonuses={sight_rad=1,dmin_boost=1,dmax_boost=1}"function torch:md()self.sj=rectangle(self.pos):zj(self.sight_rad)ui(function(p,t)if p:ic(self.pos)<self.sight_rad and los(self.pos,p)and not(void<t)then t.lights=t.lights or{}add(self,t.lights)end end,self.sj)end function torch:pe()ui(function(p,t)if t.lights then del(t.lights,self)
+if(#t.lights==0)t.lights=nil
+end end,self.sj)end knife=equipment:gh"classname=knife,sprite=68,name=knife,equip_slot=weapon,throw_sfx=8,dthrown=4,flr_mult=5,bonuses={hit_boost=5,dmin_boost=1,dmax_boost=2}"sword=knife:gh"classname=sword,sprite=69,name=sword,equip_slot=weapon,dthrown=3,flr_mult=1,bonuses={hit_boost=-10,dmin_boost=3,dmax_boost=6}"tomahawk=knife:gh"classname=tomahawk,sprite=73,name=tomahawk,equip_slot=weapon,dthrown=8,flr_mult=1,bonuses={hit_boost=5,dmin_boost=1,dmax_boost=1}"plate_armor=equipment:gh"classname=plate_armor,sprite=75,name=plate armor,equip_slot=armor,flr_mult=1,bonuses={ac=3}"leather_armor=equipment:gh"classname=leather_armor,sprite=76,name=leather armor,equip_slot=armor,flr_mult=2,bonuses={ac=1}"spiked_armor=equipment:gh"classname=spiked_armor,sprite=77,name=spiked armor,equip_slot=armor,flr_mult=2,bonuses={ac=2,dmin_boost=2}"warded_armor=equipment:gh"classname=warded_armor,sprite=78,name=warded armor,equip_slot=armor,flr_mult=1,bonuses={ac=6}"def_ring=equipment:gh"classname=def_ring,sprite=80,name=ring of shielding,equip_slot=ring,flr_mult=5,bonuses={ac=3}"creature=entity:gh"classname=creature,sight_rad=4,hp_max=10,exp=2,hitrate=75,min_dmg=0,max_dmg=4,ac=0,dmax_boost=0,dmin_boost=0,hit_boost=0"zf({__add=function(self,x)self:ne(x)return self end,__sub=function(self,x)return self+-x end},creature.xj)function creature:ri(ie)entity.ri(self,ie)self.hp,self.turn,self.rc,self.ij=self.hp_max,turn,{},{}
+if(self.item_table)self:hc()
+end function creature:hc()hf(self.item_table,function(class)local itm=class(self)
 if(equipment<itm)itm:equip(self)
-end)end function creature:take_turn()if not self.gi and self.pos then function jk()self:take_turn()end local cj,target,guard_pos,sight_rad,path,dest=xj(self,"pos,target,guard_pos,sight_rad,path")if not target and self.bi!=turn and self:can_see(you.pos)and cj:md(you.pos)<sight_rad then self.target=you return jk()end dest=target and target.pos or guard_pos if target and(target.hp<=0 or not self:can_see(dest)and cj:md(dest)>2)then self.target,self.bi=nil,turn return jk()end if dest then local mk=cj:md(dest)if not path or mk<2 and cj:md(path:get(1))>mk and cj!=dest then self.path=qg(cj,dest)end end local d 
-if(not(self.path or guard_pos))d=wg(3,0)
-self:move(d)end end function creature:zg(c2)return target==c2 or not(self:class()<c2)end function creature:take(itm)for i in all(self.pe)do 
+end)end function creature:take_turn(a2)if not self.dj and self.pos then function j()self:take_turn(a2)end local fi,target,guard_pos,sight_rad,path,ranged,dest=fk(self,"pos,target,guard_pos,sight_rad,path,ranged")if not target and self.vd!=turn and self:can_see(you.pos)and fi:ic(you.pos)<sight_rad then self.target=you return j()end dest=target and target.pos or guard_pos local xe=target and self:can_see(dest)if target and(target.hp<=0 or not xe and fi:ic(dest)>2)then self.target,self.vd=nil,turn return j()end if ranged and xe then sc(ranged,fi,dest,function(qg)if qg==dest then self:bg(target)end end)else if dest then local pj=fi:ic(dest)
+if(not path or pj<2 and
+fi:ic(path:get(1))>pj)and fi!=dest then self.path=mh(fi,dest)end end local d 
+if(not(self.path or guard_pos))d=ob(3,0)
+self:move(d)end end 
+if(self.yf and not a2)self:take_turn(true)
+end function creature:tj(c2)return self.vc or target==c2 or not(self:class()<c2)end function creature:take(itm)for i in all(self.rc)do 
 if(i.name==itm.name)then
-ib(itm)i:dk(itm.qty)return end end if#self.pe==7 then 
+dk(itm)i:bk(itm.qty)return end end if#self.rc==7 then 
 if(self==you)msg"you can't carry any more."
-else ib(itm)itm.pos,itm.ie=nil,self add(self.pe,itm)end end function creature:drop(itm,qty,pos)qty=qty or itm.qty pos=pos or self.pos itm:dk(-qty)for e in all(ei(pos))do 
-if(e.name==itm.name)e:dk(qty)return e
-end local wd=itm.qty>0 and itm:class()()or itm jb(itm,wd)wd.qty,wd.pos,wd.ie=qty,-pos,nil nd(wd)return wd end function creature:move(d)local path=self.path if d or path then local pf=d and point(self.pos):move(d)or-path local dest,bf=qi(pf),jg(pf)if dest and ni(pf)and not bf and(not dest.solid or self.spectral)then 
-if(not self.ah and lb>self.pos)self.ah=self.sprite+1
-ri(self,pf)
-if(rk(self))sfx(0)
-else if bf and self:zg(bf)then self:aj(bf)end self.path=nil end 
-if(dest and dest.te)dest:te(self)
+else dk(itm)itm.pos,itm.holder=nil,self add(self.rc,itm)end end function creature:drop(itm,qty,pos)qty=qty or itm.qty pos=pos or self.pos itm:bk(-qty)for e in all(yd(pos))do 
+if(e.name==itm.name)e:bk(qty)return e
+end local te=itm.qty>0 and itm:class()()or itm zf(itm,te)te.qty,te.pos,te.holder=qty,-pos,nil pb(te)return te end function creature:move(d)
+if(self.vc and rnd(2)<1)d=ob(3,0)
+local path=self.path if d or path then local jb=d and point(self.pos):move(d)or-path local dest,fg=fb(jb),qj(jb)if dest and vh(jb)and not fg and(not dest.solid or self.spectral)then 
+if(not self.le and tb>self.pos)self.le=self.sprite+1
+be(self,jb)
+if(wk(self))sfx(0)
+else if fg and self:tj(fg)then self:bg(fg)end self.path=nil end 
+if(dest and dest.kk)dest:kk(self)
 if(path and#path==0)self.path=nil
-end end function creature:le(n)self.hp=min(self.hp_max,self.hp+n)if self.hp<=0 then foreach(self.pe,function(itm)self:drop(itm)end)kd(self.hi,function(itm)self:drop(itm)end)sh(self," died.")ib(self)end end function creature:aj(c2,dmg,hitrate)dmg,hitrate=dmg or max(0,wg(self.max_dmg+self.dmax_boost,self.min_dmg+self.dmin_boost)-c2.ac),hitrate or self.hitrate+self.hit_boost 
-if(not self.ah and lb>self.pos)self.ah=self.sprite+2
-local fx function rb(ng,xh)sh(self,ng..c2.name..xh)end if wg(100)>hitrate then rb(" missed ","!")fx=1 else c2.target=c1 fx=2 if dmg==0 then rb(" barely hits ",".")return else rb(" hit "," for "..dmg.." damage.")if dmg>=c2.hp then 
+end end function creature:ne(n)self.hp=min(self.hp_max,self.hp+n)if self.hp<=0 then if self==you then self.hp,self.exp=self.hp_max,0 deaths=deaths and deaths+1 or 1 msg("deaths:"..deaths)return end foreach(self.rc,function(itm)self:drop(itm)end)ld(self.ij,function(itm)self:drop(itm)end)lf(self," died.")dk(self)end end function creature:bg(c2,dmg,hitrate)dmg,hitrate=dmg or max(0,ob(self.max_dmg+self.dmax_boost,self.min_dmg+self.dmin_boost)-c2.ac),hitrate or self.hitrate+self.hit_boost 
+if(not self.le and tb>self.pos)self.le=self.sprite+2
+local fx function ed(bb,hk)lf(self,bb..c2.name..hk)end if ob(100)>hitrate then ed(" missed ","!")fx=1 else c2.target=c1 fx=2 if dmg==0 then ed(" barely hits ",".")return else ed(" hit "," for "..dmg.." damage.")if dmg>=c2.hp then 
 if(self==you)kills+=1
 self.exp+=c2.exp
 end end 
 c2-=dmg
 end 
-if(fx and rk(self))sfx(fx)
-end rat=creature:sc"classname=rat,name=rat,sprite=144,hp_max=5,sight_rad=6,flr_mult=-10,item_table={meat=200,knife=10}"kobold=rat:sc"classname=kobold,name=kobold,sprite=131,hp_max=8,exp=4,min_dmg=1,max_dmg=5,ac=1,flr_mult=10,item_table={torch=600,apple=200,knife=400,leather_armor=100}"mantid=rat:sc"classname=mantid,name=mantid,sprite=147,hp_max=12,hitrate=60,min_dmg=6,max_dmg=9,exp=10,flr_mult=10,item_table={potion=800,meat=500}"watcher=mantid:sc"classname=watcher,name=watcher,sight_rad=10,sprite=176,hp_max=20,hitrate=95,min_dmg=3,max_dmg=6,ac=3,exp=20,flr_mult=2,item_table={knife=500,sword=1000,bread=800,potion=400,spiked_armor=200}"function watcher:tc(ti)creature.tc(self,ti)self.guard_pos=-self.pos end player=creature:sc"classname=player,name=rogue,color=7,sprite=128,hp_max=10,hitrate=85,min_dmg=1,max_dmg=5,take_turn=always_nil,item_table={bread=1000,apple=800,meat=200,torch=1000,potion=500,scroll=500}"function player:move(d)
-if(not nk)creature.move(self,d)
-fk()end tile=kc:sc"classname=tile,solid=true,sprite=nil,color=2"function tile:tc()
+if(fx and wk(self))sfx(fx)
+end rat=creature:gh"classname=rat,name=rat,sprite=144,hp_max=5,sight_rad=6,flr_mult=-10,item_table={meat=200,knife=10}"kobold=rat:gh"classname=kobold,name=kobold,sprite=131,hp_max=8,exp=4,min_dmg=1,max_dmg=5,ac=1,flr_mult=10,item_table={torch=600,apple=200,knife=400,leather_armor=100}"mantid=rat:gh"classname=mantid,name=mantid,sprite=147,fast=true,hp_max=12,hitrate=60,min_dmg=6,max_dmg=9,exp=10,flr_mult=10,item_table={potion=800,meat=500}"watcher=mantid:gh"classname=watcher,name=watcher,sight_rad=10,sprite=176,hp_max=20,hitrate=95,fast=false,min_dmg=3,max_dmg=6,ac=3,exp=20,flr_mult=2,item_table={knife=500,sword=1000,bread=800,potion=400,spiked_armor=200}"function watcher:ri(ie)creature.ri(self,ie)self.guard_pos=-self.pos end sentinel=watcher:gh"classname=sentinel,name=sentinel,sight_rad=2,sprite=160,hp_max=25,hitrate=100,fast=false,min_dmg=3,max_dmg=3,ac=3,exp=20,flr_mult=2,item_table={statue=1000,spiked_armor=500}"player=creature:gh"classname=player,name=rogue,sprite=128,hp_max=10,hitrate=85,min_dmg=1,max_dmg=5,take_turn=always_nil,item_table={bread=1000,apple=800,meat=200,torch=300,potion=500,scroll=500}"function player:move(d)
+if(not pk)creature.move(self,d)
+sh()end tile=jd:gh"classname=tile,solid=true,sprite=nil"function tile:ri()
 if(self.alt_sprite and rnd(100)<5)self.sprite=self.alt_sprite
-end function xc()gc(function(p,t)fd(t.item_table,function(class)class(p)return true end)end)end void=tile:sc"classname=void,sprite=62"function void:ld()return self end floor=tile:sc"classname=floor,solid=false,sprite=19,alt_sprite=20,color=4"wall=tile:sc"classname=wall,sprite=16,alt_sprite=17,color=6"dungeon_floor=floor:sc"classname=dungeon_floor,item_table={knife=1,potion=2,scroll=2,mushroom=2,bread=1,plate_armor=0,leather_armor=-2},spawn_table={rat=100,kobold=200,mantid=0,watcher=-20}"dungeon_wall=wall:sc"classname=dungeon_wall"cave_floor=floor:sc"classname=cave_floor,sprite=3,alt_sprite=4,color=0,item_table={torch=20,apple=10,mushroom=50,potion=5,leather_armor=2},spawn_table={rat=400,mantid=-20,kobold=-2}"cave_wall=wall:sc"classname=cave_wall,sprite=0,alt_sprite=1,color=1"temple_floor=floor:sc"classname=temple_floor,sprite=35,alt_sprite=36,color=11,item_table={knife=20,tomahawk=0,sword=0,potion=30,scroll=30,ring=1,spiked_armor=0,warded_armor=-4},spawn_table={kobold=900,mantid=500,watcher=0}"throne=floor:sc"classname=throne,sprite=34,color=11"floor_pedestal=floor:sc"classname=floor_pedestal,sprite=18,color=6"temple_wall=wall:sc"classname=temple_wall,sprite=32,alt_sprite=33,color=12"door=tile:sc"classname=door,sprite=21,color=9,use_sfx=9"function door:te(li)
-if(self.solid)use(self,li.pos)
-end function door:use()local ji=self.solid and 1 or-1 self.solid=not self.solid 
-self.use_sfx+=ji
-self.sprite+=ji
-self.color+=ji
-end temple_door=door:sc"classname=temple_door,sprite=37"cave_secret_door=door:sc"classname=cave_secret_door,sprite=7"dungeon_secret_door=door:sc"classname=dungeon_secret_door,sprite=23"temple_secret_door=door:sc"classname=temple_secret_door,sprite=39"up_stair=tile:sc"classname=up_stair,sprite=5,color=13,solid=false"function up_stair:use()msg"you're not going back"end stair=tile:sc"classname=stair,sprite=6,color=13,solid=false"function stair:use()if qi(you.pos)==self then yi()
-j+=1
-hf=0 kd(kk,function(cl)if rat<cl then 
+end void=tile:gh"classname=void,sprite=62"function void:bj()return self end floor=tile:gh"classname=floor,solid=false,sprite=19,alt_sprite=20"wall=tile:gh"classname=wall,sprite=16,alt_sprite=17"dungeon_floor=floor:gh"classname=dungeon_floor,item_table={knife=1,potion=2,scroll=2,mushroom=2,bread=1,plate_armor=-1,leather_armor=-2},spawn_table={rat=100,kobold=200,mantid=-20,watcher=-20}"dungeon_wall=wall:gh"classname=dungeon_wall"cave_floor=floor:gh"classname=cave_floor,sprite=3,alt_sprite=4,item_table={torch=20,apple=10,mushroom=50,potion=5,leather_armor=2},spawn_table={rat=400,mantid=-40,kobold=-2}"cave_wall=wall:gh"classname=cave_wall,sprite=0,alt_sprite=1"temple_floor=floor:gh"classname=temple_floor,sprite=35,alt_sprite=36,item_table={knife=20,tomahawk=0,sword=0,potion=30,scroll=30,def_ring=1,spiked_armor=0,warded_armor=-4},spawn_table={kobold=900,mantid=-15,watcher=0}"throne=floor:gh"classname=throne,sprite=34"floor_pedestal=floor:gh"classname=floor_pedestal,sprite=18"temple_wall=wall:gh"classname=temple_wall,sprite=32,alt_sprite=33"door=tile:gh"classname=door,sprite=21,use_sfx=9"function door:kk(rj)
+if(self.solid)use(self,rj.pos)
+end function door:use()local uh=self.solid and 1 or-1 self.solid=not self.solid 
+self.use_sfx+=uh
+self.sprite+=uh
+end temple_door=door:gh"classname=temple_door,sprite=37"cave_secret_door=door:gh"classname=cave_secret_door,sprite=7"dungeon_secret_door=door:gh"classname=dungeon_secret_door,sprite=23"temple_secret_door=door:gh"classname=temple_secret_door,sprite=39"up_stair=tile:gh"classname=up_stair,sprite=5,solid=false"function up_stair:use()msg"you're not going back"end stair=tile:gh"classname=stair,sprite=6,solid=false"function stair:use()if fb(you.pos)==self then xk()
+qd+=1
+jj=0 ld(ni,function(cl)if rat<cl then 
 cl.hp_max+=2
 cl.min_dmg+=1
 cl.max_dmg+=1
-cl.ai=j end end)gb,hb=point(you.pos),true nd(you)mj()fi()else msg"move closer to descend"end end function fi()local lg=sd"addr=264e,len=634"local jj,range,jh=100-#lg,4,timer()vk,hb,re,rh,hh,bd=df,xj"true,0,0,cave_wall,cave_floor"ob(function()while re<jj do jh()local tb=re>55-j if tb then hh,bd,range=dungeon_wall,dungeon_floor,0 end if ed then while#ed>0 do gb=-ed local t=qi(gb)if t.solid and not(door<t)then if t.gj and sj(gb,floor,false)>1 then ug(gb,door())wf(function(e)ib(e)end,rectangle(gb))else ug(gb,bd())end 
-rh+=zb(gb)
-end end re,ed=min(jj,flr(rh/#th*(120+j*10))),nil else ne=rectangle()*(tb and 4 or wg(4))if tb then local pos=oe(function(p)return nc(ne+p)and ni(ne+p)end)
-if(not pos)re=jj break
-ne+=pos
-for d=1,4 do local mc=rectangle(ne)while(nc(mc)and th>mc and rnd(10)<7)do ne(mc)mc:expand(1,d)end end hd(ne,hh)
-rh+=#ne
-ne:expand(-1)hd(ne,bd)ne:expand(1)else 
-ne+=gb
-end gc(function(p,t)if tb then 
-if(sj(p,bd)==1 or not ni(p))t.fixed=true
-if(dungeon_wall<t)t.gj=true
-if(not t.kf)torch(p)
-else if p:md(gb)<=ne.w/2 then ug(p,cave_floor())
-rh+=(1+zb(p))
-end end end,ne)ed=re<jj and qg(gb,tb and(point(wg(ne.w-2,1),wg(ne.h-2,1))+ne)or oe(always_true),function(p,t,hc)
-if(t.fixed or not ni(p))return
-return(t.gj and 40 or 0)+((t and t.solid or door<t)and(tg and(5+sj(p,floor)*2)or 10-sj(p,floor)*2+rnd(4))or 0)end,range)end end gc(function(p,t)if door<t and sj(p,door,true)>0 then ug(p,sj(p,wall,true)>1 and dungeon_floor()or dungeon_wall())end end)for i=1,#lg do local ig=lg[i]
-if(wb(ig))log(ig)
-local ck,dc,class=ig.try,ig.max oe(function(p,t)
-ck-=1
-if(ck<1)return true
-jh()for vg=0,3 do function lh(og,fn)return foreach(og,function(k)if tile<k or entity<k then class=k else k=(#k==4 and rectangle or point)(xj(k))k=(k+p):uc(p,vg)return fn(k,class)end end)end if not lh(ig.val,function(pos,class)return not ni(pos)or not(rectangle<pos)and not(class<qi(pos))or pos.w and not nc(pos,class)end)then lh(ig.bld,function(pos,class)if tile<class then if pos.w then hd(pos,class)else ug(pos,class())end elseif entity<class then class(pos)end end)
-dc-=1
-if(dc<1)return true
+end end)yg,nd=point(you.pos),true pb(you)ak()uc()else msg"move closer to descend"end end function uc()local og=lb"addr=264e,len=638"local rk,range,ge=100-#og,4,timer()rd,nd,ik,pf,me,l=td,fk"true,0,0,cave_wall,cave_floor"ue(function()while ik<rk do ge()local ai=ik>55-qd if ai then me,l,range=dungeon_wall,dungeon_floor,0 end if zc then while#zc>0 do yg=-zc local t=fb(yg)if t.solid and not(door<t)then if t.jg and uj(yg,floor,false)>1 then fh(yg,door())vg(function(e)dk(e)end,rectangle(yg))else fh(yg,l())end 
+pf+=lj(yg)
+end end ik,zc=min(rk,flr(pf/#ve*(120+qd*10))),nil else wj=rectangle()*(ai and 4 or ob(4))if ai then local pos=yj(function(p)return id(wj+p)and vh(wj+p)end)
+if(not pos)ik=rk break
+wj+=pos
+for d=1,4 do local bf=rectangle(wj)while(id(bf)and ve>bf and rnd(10)<7)do wj(bf)bf:zj(1,d)end end qi(wj,me)
+pf+=#wj
+wj:zj(-1)qi(wj,l)wj:zj(1)else 
+wj+=yg
+end ui(function(p,t)if ai then 
+if(uj(p,l)==1 or not vh(p))t.fixed=true
+if(dungeon_wall<t)t.jg=true
+if(not t.lights)torch(p)
+else if p:ic(yg)<=wj.w/2 then fh(p,cave_floor())
+pf+=(1+lj(p))
+end end end,wj)zc=ik<rk and mh(yg,ai and(point(ob(wj.w-2,1),ob(wj.h-2,1))+wj)or yj(always_true),function(p,t,ih)
+if(t.fixed or not vh(p))return
+return(t.jg and 40 or 0)+((t and t.solid or door<t)and(nj and(5+uj(p,floor)*2)or 10-uj(p,floor)*2+rnd(4))or 0)end,range)end end ui(function(p,t)if door<t and uj(p,door,true)>0 then fh(p,uj(p,wall,true)>1 and dungeon_floor()or dungeon_wall())end end)for i=1,#og do local sd=og[i]local qh,db,class=sd.try,sd.max yj(function(p,t)
+qh-=1
+if(qh<1)return true
+ge()for hb=0,3 do function wc(jf,fn)return foreach(jf,function(k)if tile<k or entity<k then class=k else k=(#k==4 and rectangle or point)(fk(k))k=(k+p):vb(p,hb)return fn(k,class)end end)end if not wc(sd.val,function(pos,class)return not vh(pos)or not(rectangle<pos)and not(class<fb(pos))or pos.w and not id(pos,class)end)then wc(sd.bld,function(pos,class)if tile<class then if pos.w then qi(pos,class)else fh(pos,class())end elseif entity<class then class(pos)end end)
+db-=1
+if(db<1)return true
 end end end)
-re+=1
-end ug(you.pos,up_stair())xc()hb,ej,re=xj"false,false,100"return end)end function zb(p)local qb=0 vh(p,function(p,t)if void<t or not ni(p)then ug(p,hh())
-qb+=1
-end end)return qb end function rd(ae,ce)ue()kh,sg,zj,vk={sprite=28,pos=-you.pos,draw=entity.draw},ae,ce or lb,rc pj()end function bk()kh=nil pj()
-if(vk==rc)vk=jd
-end function pk(r)
-if(wb(r))r=rectangle(r)
-rectfill(rg(4,r:z()))rectfill(rg(2,(-r):expand(-1):z()))end msg=queue()function sh(e,oj,pre)if rk(e)and(pre or oj)then pre,oj=pre or"",oj or""msg(pre..e.name..oj)end end function qh()msg.ze,msg.yd=msg.yd or msg.ze,(#msg>0)and-msg end menu=stack:sc"classname=menu,index=1,turn_modded=0"bh=stack()function menu:tc()stack.tc(self)self.pos=rectangle"5,25,4,12"end function mj()dh=-bh pj()
-if(not dh and vk==zd)vk=jd
-end function ue()while dh do mj()end end function menu:add(name,op,vc)self{name=name,op=op,turn=vc}end function menu:ak()
-if(self.xg)self:xg()
-if#self>0 then bh(dh)dh=self vk=zd end pj()end function menu:draw()local pos,w=self.pos,0 foreach(self.values,function(v)w=max(w,#v.name*4+14)end)pos.w,pos.h=w+6,6*#self+12 pk(pos)for i=1,#self do local dp=point(2,6*i+2)+pos 
-if(i==self.index)spr(31,dp:nj())
-print(self:get(i).name,dp.x+9,dp.y,10)
+ik+=1
+end fh(you.pos,up_stair())ui(function(p,t)hf(t.item_table,function(class)class(p)return true end)end)nd,ik=false,100 return end)end function lj(p)local z=0 ci(p,function(p,t)if void<t or not vh(p)then fh(p,me())
+z+=1
+end end)return z end function xh(rg,pc)ze()eb,kb,eg,rd={sprite=28,pos=-you.pos,draw=entity.draw},rg,pc or tb,rh ki()end function ib()eb=nil ki()
+if(rd==rh)rd=uf
+end function qc(r)
+if(lh(r))r=rectangle(r)
+rectfill(zd(4,r:ke()))rectfill(zd(2,(-r):zj(-1):ke()))end msg=queue()function lf(e,tf,pre)if wk(e)and(pre or tf)then pre,tf=pre or"",tf or""msg(pre..e.name..tf)end end function xg()msg.qk,msg.kc=msg.kc or msg.qk,(#msg>0)and-msg end menu=stack:gh"classname=menu,index=1,turn_modded=0"dg=stack()function menu:ri()stack.ri(self)self.pos=rectangle"5,25,4,12"end function ak()ok=-dg ki()
+if(not ok and rd==yh)rd=uf
+end function ze()while ok do ak()end end function menu:add(name,op,gi,item)self{name=name,op=op,turn=gi,item=item}end function menu:ce()
+if(self.ab)self:ab()
+dg(ok)ok,self.vf,rd=self,#dg,yh ki()end function menu:draw()local pos,w=self.pos+(point(10,10)*self.vf),19 foreach(self.values,function(v)w=max(w,#v.name*4+(v.item and 24 or 14))end)pos.w,pos.h=w,max(9*#self+2,10)qc(pos)for i=1,#self do local dp,menuitem=point(10,9*i-5)+pos,self:get(i)local itm=menuitem.item if i==self.index then spr(31,dp.x-8,dp.y)end if itm then itm:draw(dp-point(0,2))
+if(itm.qty>1)print(itm.qty,dp.x+7,dp.y+2,10)
+dp.x+=13
+end print(menuitem.name,dp.x,dp.y,10)
 i+=1
-end end cb=menu()function cb:xg()while self:get(#self).turn do self:hk()end vh(you.pos,function(p,t)foreach(ei(p),function(e)if item<e then self:add("take "..e.name..(e.qty>1 and"("..e.qty..")"or""),function()you:take(e)self:xg()end,turn)end end)end,false,true)
+end end ec=menu()function ec:ab()while self:get(#self).turn do self:sg()end ci(you.pos,function(p,t)foreach(yd(p),function(e)if item<e then self:add("take "..e.name..(e.qty>1 and"("..e.qty..")"or""),function()you:take(e)self:ab()end,turn)end end)end,false,true)
 if(self.index>#self)self.index=#self
-end cb:add("inventory",function()inventory:ak()end)cb:add("equipment",function()pd:ak()end)cb:add("knowledge",function()bb:ak()end)cb:add("use",function()ue()rd(function(p)
-if(use(qi(p),you))return
-for e in all(ei(p))do 
+end ec:add("inventory",function()inventory:ce()end)ec:add("equipment",function()dc:ce()end)ec:add("knowledge",function()nf:ce()end)ec:add("use",function()ze()xh(function(p)
+if(use(fb(p),you))return
+for e in all(yd(p))do 
 if(use(e,you))return
-end msg"you can't use that."end,rectangle(you.pos):expand())end)inventory=menu()function inventory:xg()self.index=1 self:clear()foreach(you.pe,function(itm)self:add("",function()local eb,qj,ph=menu(),itm.name,function()ue()fk()end eb.pos=rectangle"20,60,1,1"if itm.use then eb:add("use "..qj,function()use(itm,you)ph()end)end if equipment<itm then eb:add("equip "..qj,function()itm:equip(you)ph()end)end eb:add("drop "..qj,function()you:drop(itm,1)ph()end)eb:add("throw "..qj,function()ue()rd(function(p)uk(itm,point(you.pos),p,function(hc)you:drop(itm,1,hc)local bf=jg(hc)
-if(bf)you:aj(bf,itm.dthrown or 1)
-if(itm.oc)itm:oc(hc)
-sfx(itm.throw_sfx)fk()end)end,lb)end)eb:ak()end)end)end function inventory:draw()pk"56,20,19,88"for i=1,min(#you.pe,7)do local y1,itm=11+i*12,you.pe[i]itm:draw(point(60,y1))
-if(i==self.index)spr(28,60,y1)
-print(itm.qty,69,y1+6,10)end end pd=menu()function pd:xg()self.index=1 self:clear()foreach(lc,function(equip_slot)local itm=you.hi[equip_slot]self{op=itm and function()local eb=menu()eb.pos=rectangle"20,60,1,1"eb{name="remove "..itm.name,op=function()itm:remove()self:xg()mj()end}eb:ak()end or always_nil}end)end bb=menu()function bb:xg()self:clear()local cg,ek=sd"armor class:damage:hit rate:,creatures killed:,most exp:,most kills:,deepest floor:",{you.ac,(you.min_dmg+you.dmin_boost).."-"..(you.max_dmg+you.dmax_boost),(you.hitrate+you.hit_boost),kills,nh[1],nh[2],nh[3]}for i=1,#cg do self:add(cg[i]..ek[i],always_nil)end end function pd:draw()sspr(xj"96,96,12,30,56,20")spr(28,58,13+9*self.index)local i=0 foreach(lc,function(u)local itm=you.hi[u]if itm then itm:draw(point(58,22+i))end 
-i+=9
-end)end function jd()for i=0,3 do 
+end msg"you can't use that."end,rectangle(you.pos):zj())end)inventory=menu()function inventory:ab()self.index=1 self:gg()foreach(you.rc,function(itm)self:add(itm.name,function()local eh,pi,ah=menu(),itm.name,function()ze()sh()end if itm.use then eh:add("use "..pi,function()use(itm,you)ah()end)end if equipment<itm then eh:add("equip "..pi,function()itm:equip(you)ah()end)end eh:add("drop "..pi,function()you:drop(itm,1)ah()end)eh:add("throw "..pi,function()ze()xh(function(p)sc(itm.sprite,point(you.pos),p,function(ih)you:drop(itm,1,ih)local fg=qj(ih)
+if(fg)you:bg(fg,itm.dthrown or 1)
+if(itm.kf)itm:kf(ih)
+sfx(itm.throw_sfx)sh()end,itm.rb)end)end)eh:ce()end,nil,itm)end)end dc=menu()function dc:ab()self.index=1 self:gg()foreach(fj,function(equip_slot)local itm=you.ij[equip_slot]self:add(itm and itm.name or equip_slot,itm and function()local eh=menu()eh:add("remove "..itm.name,function()itm:remove()self:ab()ak()end)eh:ce()end or always_nil,nil,itm or item{sprite=48+#self})end)end nf=menu()function nf:ab()self:gg()local o,pg=lb"armor class:,damage:,hit rate:,creatures killed:,most exp:,most kills:,deepest floor:",{you.ac,(you.min_dmg+you.dmin_boost).."-"..(you.max_dmg+you.dmax_boost),(you.hitrate+you.hit_boost),kills,cj[1],cj[2],cj[3]}for i=1,#o do self:add(o[i]..pg[i],always_nil)end 
+if(bd)self:add(bd,always_nil)
+end function uf()for i=0,3 do 
 if(btnp(i))you:move(i)
 end 
-if(btnp"4")cb:ak()
-if(btnp"5")ej=not ej
-pj()end function rc()for i=0,3 do if btnp(i)then local pos=(-kh.pos):move(i)if zj>pos and ni(pos)then kh.pos(pos)pj()end end end if btnp"4"then sg(kh.pos)bk()end 
-if(btnp"5")msg"cancelled."bk()
-end function zd()
-if(btnp"0")mj()return
+if(btnp"4")ec:ce()
+if(btnp"5")qe=not qe
+ki()end function rh()for i=0,3 do if btnp(i)then local pos=(-eb.pos):move(i)if eg>pos and vh(pos)then eb.pos(pos)ki()end end end if btnp"4"then kb(eb.pos)ib()end 
+if(btnp"5")msg"cancelled."ib()
+end function yh()
+if(btnp"0")ak()return
 if(btnp"2")then
-dh.index-=1
-if(dh.index==0)dh.index=#dh
+ok.index-=1
+if(ok.index==0)ok.index=#ok
 end 
-if(btnp"3")dh.index%=#dh dh.index+=1
+if(btnp"3")ok.index%=#ok ok.index+=1
 if btnp"4"or btnp"1"then 
-if(dh.index<=#dh)dh:get(dh.index):op()pj()
+if(ok.index<=#ok)ok:get(ok.index):op()ki()
 end 
-if(btnp"5")ue()
-end function zh()
-if(btnp"5")ej=not ej
-fk()qh()end function df()
-if(hb)return
-mb=false vk=jd pj()end function o()
-lb-=lb+point(8,8)-you.pos
-end function _init()cartdata"phantasos"yi()ad,mg,sf,lb,vk,gb,ej,ok,turn,hf,oi,j,hb,mb,kills,nh,lc=queue(),queue(),queue(),rectangle()*16,df,oe(always_true),xj"false,0,0,0,7,1,true,true,0,{0,0,0},{weapon,armor,rings}"you,xb,vf=player(gb),je(fj(0x2000,0x284)),{}o()local dg=je(fj(0x2284,0x3ca))foreach(dg,function(gk)local pi={}for i=2,#gk do add(pi,gk[i])end vf[#gk[1]]=pi end)fi()msg"travel deeper, rogue."end function _update()if fb(ad)then return end if nk then fb(mg,true)turn=ef(turn,1)if you.hp<=0 then mh,we,vk=true,true,zh end nk=false local exp=you.exp you.hp_max,you.max_dmg,you.hitrate=10+flr(exp/30),player.max_dmg+flr(exp/100),80+exp/100 local zc={exp,kills,j}for i=1,3 do nh[i]=max(zc[i],dget(i))dset(i,nh[i])end elseif btnp()!=0 and not ve then if not mb and#msg>0 then qh()else 
-if(msg.yd)qh()
-vk()end end end function _draw()ok=ef(ok,1)if mb or hb then sspr(32*(flr((ok%18)/6)),xj"96,32,32,0,0,128,128")
-if(ok%9==0)sfx(0)
-if(mb)sspr(xj"64,64,64,16,14,0,100,25")
-local af="press any key to start"
-if(re<100)af="descending:"..re.."%"
-local x1=66-#af*2 pk(rectangle(x1,118,#af*4,128))print(af,x1+1,121,10)return end if ve and tj(ve,ok)then ve=nil cls()o()local uj function draw(s)spr(s,(uj*8):nj())end local db,sb={},sd"0=0,1=0,2=1,3=1,4=2,5=1,6=5,7=6,8=2,9=4,10=4,11=3,12=1,13=5,14=8,15=4"for i=1,#xb do local td=xb[i]uj=td[1]local yb=uj+lb local t,key=qi(yb)or void,#uj kd(sb,function(v,k)pal(k,you.fe and wg(16,0)or v)end)if we or not(db[key]or t<void or(you.pos:md(yb)>you.sight_rad and not t.kf)or you.can_see==always_nil)then t.dj=true if not you.fe then pal()end draw(t.sprite)wf(function(e)e:draw()end,rectangle(yb))elseif t.dj then draw(t.sprite)end pal()if t.solid or db[key]then for k=2,#td do db[#td[k]]=true end end end 
-if(kh)kh:draw()
-pk"8,116,110,10"print("hp:"..you.hp.."/"..you.hp_max.." exp:"..you.exp.." floor "..j,xj"15,119,10")if ej then pk"32,28,69,69"gc(function(p,t)if t.dj or we then local c=t.color if rk(p)then wf(function(e)c=e.color end,rectangle(p))end local x,y=((p*2)+point(38,34)):nj()rectfill(x,y,x+2,y+2,c)end end)end end 
-if(fb(sf,true))pj()
-pk"2,2,124,14"
-if(not msg.yd and#msg>0)qh()
-local ze,yd=msg.ze or"",msg.yd or""print(ze,4,4,9)
-if(#msg>0)spr(xj"31,120,10")
-print(yd,4,10,10)foreach(bh.values,function(m)m:draw()end)
-if(dh)dh:draw()
+if(btnp"5")ze()
+end function cc()
+if(btnp"5")qe=not qe
+sh()xg()end function td()
+if(nd)return
+ae=false rd=uf ki()end function bh()
+tb-=tb+(point"x=8,y=8")-you.pos
+end function _init()cartdata"phantasos"xk()xb,df,tb,rd,yg,qe,zg,turn,jj,lg,qd,nd,ae,kills,cj,fj=queue(),queue(),rectangle()*16,td,yj(always_true),fk"false,0,0,0,7,1,true,true,0,{0,0,0},{weapon,armor,ring}"you,uk,mb=player(yg),jh"addr=2000,len=284",{}bh()local cf=jh"addr=2284,len=3ca"foreach(cf,function(q)local of={}for i=2,#q do add(of,q[i])end mb[#q[1]]=of end)uc()msg"travel deeper, rogue."end function _update()if mk(xb)then return end if pk then turn=we(turn,1)if you.hp<=0 then zb,tk,rd=true,true,cc end pk=false local exp=you.exp you.hp_max,you.max_dmg,you.hitrate=10+flr(exp/30),player.max_dmg+flr(exp/100),80+exp/100 local pd={exp,kills,qd}for i=1,3 do cj[i]=max(pd[i],dget(i))dset(i,cj[i])end elseif btnp()!=0 and not gf then if not ae and#msg>0 then xg()else 
+if(msg.kc)xg()
+rd()end end end function _draw()zg=we(zg,1)if ae or nd then palt(0,false)sspr(32*(flr((zg%18)/6)),fk"96,32,32,0,0,128,128")
+if(zg%9==0)sfx(0)
+pal()
+if(ae)sspr(fk"64,64,64,16,14,0,100,25")
+local cd="press any key to start"
+if(ik<100)cd="descending:"..ik.."%"
+local x1=66-#cd*2 qc(rectangle(x1,118,#cd*4,128))print(cd,x1+1,121,10)return end if not nd and gf and wf(gf,zg)then gf=nil cls()bh()local gc function draw(s)spr(s,(gc*8):xd())end local li,th={},lb"0=0,1=0,2=1,3=1,4=2,5=1,6=5,7=6,8=2,9=4,10=4,11=3,12=1,13=5,14=8,15=4"for i=1,#uk do local dd=uk[i]gc=dd[1]local zi=gc+tb local t,key=fb(zi)or void,#gc ld(th,function(v,k)pal(k,you.vc and ob(16,0)or v)end)if tk or not(li[key]or t<void or(you.pos:ic(zi)>you.sight_rad and not t.lights)or you.blind)then t.sf=true if not you.vc then pal()end draw(t.sprite)vg(function(e)e:draw()end,rectangle(zi))elseif t.sf then draw(t.sprite)end pal()if t.solid or li[key]then for k=2,#dd do li[#dd[k]]=true end end end 
+if(eb)eb:draw()
+qc"8,116,110,10"print("hp:"..you.hp.."/"..you.hp_max.." exp:"..you.exp.." floor "..qd,fk"15,119,10")if qe then qc"17,19,94,94"rectfill(fk"19,21,110,112,0")ui(function(p,t)if t.sf or tk then function fd(s)local x,y=((p*3)+point"x=19,y=21"):xd()sspr((s%16)*8,flr(s/16)*8,8,8,x,y,3,3)end fd(t.sprite)if wk(p)then vg(function(e)fd(e.sprite)end,rectangle(p))end end end)end end 
+if(mk(df,true))ki()
+qc"2,2,124,14"
+if(not msg.kc and#msg>0)xg()
+local qk,kc=msg.qk or"",msg.kc or""print(qk,4,4,9)
+if(#msg>0)spr(fk"31,120,10")
+print(kc,fk"4,10,10")foreach(dg.values,function(m)m:draw()end)
+if(ok)ok:draw()
 end
 __gfx__
 12022201120220311202220111111111555155550000000000000000120222010122210000000000000000000000000000000000000000000000000000000000
-212002201c1020312120022015551111511113350222200005555550212000201200021000000000000000000000000000000000000000000000000000000000
-202110202c103031202110205511551533113133255112000ddddd10202110201200021000000000000000000000000000000000000000000000000000000000
-22021020230230212202102011551155533551152ddd120005555220220210202000002000000000000000000000000000000000000000000000000000000000
-02021021230c3021020210211115511133553311255552000ddd1210020210212000002000000000000000000000000000000000000000000000000000000000
-02021021102c10210202102155111555133333332ddddd0005522110020210212000002000000000000000000000000000000000000000000000000000000000
-12021210022c02111202121015555111513335532555555002121220120210202000002000000000000000000000000000000000000000000000000000000000
-1202221002222011120222101111111155115511dddddddd00000000120210201000001000000000000000000000000000000000000000000000000000000000
+212002201c1020312120022015551111511113350222200006666660212000201200021000000000000000000000000000000000000000000000000000000000
+202110202c1030312021102055115515331131332661120007777710202110201200021000000000000000000000000000000000000000000000000000000000
+22021020230230212202102011551155533551152777120006666220220210202000002000000000000000000000000000000000000000000000000000000000
+02021021230c30210202102111155111335533112666620007771210020210212000002000000000000000000000000000000000000000000000000000000000
+02021021102c10210202102155111555133333332777770006622110020210212000002000000000000000000000000000000000000000000000000000000000
+12021210022c02111202121015555111513335532666666002121220120210202000002000000000000000000000000000000000000000000000000000000000
+12022210022220111202221011111111551155117777777700000000120210201000001000000000000000000000000000000000000000000000000000000000
 120112011201120122222222000000000000000012011201120112011211100112d112d10000000000000000000000009aa009aa9aaaa0009a9a00000009a000
 d2ddd2ddd2ddd2dd200000020110222001110220d999aaadd999aaadd2ddd0ddd22dd22d0000000000000000000000009a00009a9a09a0009a9a000000009a00
 20112011200000012cdddd020110222001110220192211a1192000a121110111110000d1000000000000000000000000000000009a09a00009a000009aaaaaa0
@@ -387,15 +376,15 @@ d2ddd2ddd200000d2ccddd020122011002201120d92211add92000add2ddd0ddd000000200000000
 10b10b11103b0b110bddddb0121dd12121d11d12b3b313b3b3b000b310b00b111b0001b100000000444444440000000000000000000000000000000000000000
 0bb10bb1033b0b31133cc3311b2222b12b1221b2b3b313b3b3b000b303b00b313b0001b30000000049c389340000000000000000000000000000000000000000
 33bbbb333333b333110000111111111112211221bbbbbbbbbbbbbbbb333bb33333bbbb3300000000444444440000000000000000000000000000000000000000
-0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000cc0c000101111011000000000000000
-000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000808000000cccc0110000110000100044000000
-0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000089aa800cccc0000011110000000001046600000
-0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009c9000c0000c0c100011110010000045550000
-000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008aa9800c00cc000111001110000000046666000
-000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000808000ccc00cc0011110001000000045555500
-0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000cc00c00001110110000010046666660
+0000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000cc0c000101111011000000000000000
+000440000444444400040000000000000000000000000000000000000000000000000000000000000000000000808000000cccc0110000110000100044000000
+0040400004004004004440000000000000000000000000000000000000000000000000000000000000000000089aa800cccc0000011110000000001046600000
+0040400004000004000400000000000000000000000000000000000000000000000000000000000000000000009c9000c0000c0c100011110010000045550000
+004040000440004400404000000000000000000000000000000000000000000000000000000000000000000008aa9800c00cc000111001110000000046666000
+004440000040004004404400000000000000000000000000000000000000000000000000000000000000000000808000ccc00cc0011110001000000045555500
+0004400000444440004440000000000000000000000000000000000000000000000000000000000000000000000000000cc00c00001110110000010046666660
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000cccc00110111010000000045555555
-000007000000000000000000000000000000070000000a0000000000000000000000000000000000000000000000000000000000000000000000000000000000
+222244222000000000000000000000000000070000000a0000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00007a8000099000007fff400004900000007a0000007a00000eee7000004000000000000007a770009aa0000000000000000000000000000000000000000000
 0000aa800007700007fcff0000c4c90000007a000000aa000eee887000884b0000aa7a000000a970009990000760076008800880060000700aa0087000000000
 0000e8000007700007cfff00044ccc9000007a000000aa00ee7888700288780009979a700000a070009a000007655760058558900ee55ee00aa8877000000000
@@ -466,12 +455,12 @@ f4efffe04eee4ef004efff000555b0b0b555b0000b5a5a0000000000000000000000000000000000
 22211222244111198441114222212222222224411119888882111211422222222222441224991111844444411111442242222414222400000000000000000000
 21112222441124198442111112112222222244411491118881142221144222212224411111111111844222211111112242222414222400000000000000000000
 11122224111499118442211111112222222244112491491881444222111111112244111111199118842222111111111142222414222400000000000000000000
-11222224111111188144214222212222222441124991491881444422211111114441144111491188842222114441222142222444222400000000000000000000
-11111111112441889144214222211222222411111111118884444422211442221111424111111189942222114222222242222244222400000000000000000000
-11444411122491899114414222211222221112244111988994444442211442221111221119991189a11221114222222242222244222400000000000000000000
-2222441112249189a1144144222112221111222441498899a4411444441142221441221144491889a11111111422222242222222222400000000000000000000
-2222224114441889a4111144442112211111222441498899a1111144441442224441221144991889a44111111142122242222222222400000000000000000000
-22222441111118ddd4111111122111114441222411498dd77114411111144222224111124111777dd44411141111111242222222222400000000000000000000
+11222224111111188144214000012222222441124991491881444422211111114441144111491188842222114441222142222444222400000000000000000000
+11111111112441889144214000011222222411111111118884444422211442221111424111111189942222114222222242222244222400000000000000000000
+11444411122491899114414000011222221112244111988994444442211442221111221119991189a11221114222222242222244222400000000000000000000
+2222441112249189a1144144000112221111222441498899a4411444441142221441221144491889a11111111422222242222222222400000000000000000000
+2222224114441889a4111144440112211111222441498899a1111144441442224441221144991889a44111111142122242222222222400000000000000000000
+22222441111118ddd4111111100111114441222411498dd77114411111144222224111124111777dd44411141111111242222222222400000000000000000000
 222221111117777dd4442221111111112441224411177ddd711444411114422222412411117ddd77d42411144111111242244444442400000000000000000000
 222221111155dd77d44442221111111222411111111d777dd4144444111144422441244117777ddd742211142222111142241141142400000000000000000000
 2222111777777dddd44444221422222222441111167dddddd44442222211111124114411ddddd77dd42211142222111142241111142400000000000000000000
@@ -514,22 +503,22 @@ __map__
 262c012605260226012d262c052601260126022d262c052604260126022d261f10181b17102811171a1a1d262c0326032d2d2d262c1f1d243501000026180c23350426210c17352c11171a1a1d262c0026002d262c0026022d260f1a1a1d262c0026012d2d260d170f352c0f201912101a19281e100e1d101f280f1a1a1d262c
 0026012d2d2d262c1f1d243501000026180c23350426210c17352c0e0c211028220c1717262c0026012d262c0226012d260e0c21102811171a1a1d262c002600260326012d262c012600260126032d2d260d170f352c0e0c2110281e100e1d101f280f1a1a1d262c0126012d261f1a1d0e13262c0126012d2d2d262c1f1d2435
 01000026180c23350126210c17352c211a140f262c002601260826052d26220c1717262c002600260826012d2d260d170f352c0f201912101a1928220c1717262c012600260626042d262c022600260326062d262c002601260826022d262c002601260726032d262c022600260426052d262c012600260726032d260f1a1a1d
-262c032600260226042d262c022601260426022d260f201912101a192811171a1a1d262c032601260226022d262c0126022d262c0626012d262c0326042d261f1a1d0e13262c0226002d262c0526002d261d141912262c0626012d261e1f0c1f2010262c0326042d26220c1f0e13101d262c0126022d2d2d262c1f1d24350100
-0026180c23350126210c17352c220c1717262c0326012d2611171a1a1d262c0326002d26211a140f262c002602260726062d2d260d170f352c1f10181b171028220c1717262c012602260526062d262c002603260726032d261f10181b17102811171a1a1d262c022603260326022d262c022606260326012d262c0326012601
-26062d261f10181b1710280f1a1a1d262c0326022d262c032604260126022d2611171a1a1d281b100f101e1f0c17262c0126042d262c0526042d261f131d1a1910262c0326042d261e1f0c1f2010262c0126042d262c0526042d26220c1f0e13101d262c0326042d2d2d262c1f1d243502000026180c23350126210c17352c21
-1a140f262c002602260526052d260e0c211028220c1717262c002601260526012d260e0c21102811171a1a1d262c002600260526012d2d260d170f352c0f201912101a1928220c1717262c002601260526062d260e0c211028220c1717262c002601260526032d260e0c21102811171a1a1d262c012603260326012d262c0126
-01260126032d2611171a1a1d281b100f101e1f0c17262c0126012d262c0326012d260f1a1a1d262c022604260126022d260f201912101a192811171a1a1d262c012605260326012d261e1f0c1f2010262c0126012d262c0326012d261f1a180c130c2216262c0326052d26161a0d1a170f262c0126052d2d2d262c1f1d243502
-000026180c23350226210c17352c211a140f262c002602260526012d260e0c211028220c1717262c002601260526012d260e0c21102811171a1a1d262c002600260526012d2d260d170f352c0e0c211028220c1717262c002601260526022d2611171a1a1d281b100f101e1f0c17262c0126012d262c0326012d261e1f0c1f20
-10262c0126012d262c0326012d2d2d262c1f1d243501000026180c23350226210c17352c11171a1a1d262c002600260326032d2d260d170f352c1f10181b17102811171a1a1d262c002600260326032d2611171a1a1d281b100f101e1f0c17262c002601260326012d262c012600260126032d261e1f0c1f2010262c0126012d
-2d2d11171a1a1d352c2c002600260326032d2d2d260d170f352c1f10181b17102811171a1a1d352c2c002600260326032d2d2611171a1a1d281b100f101e1f0c17352c2c002601260326012d262c012600260126032d2d1e1f0c1f2010352c2c0126012d2d2d2d2811171a1a1d26032703260327030624060108070806070507
-04070306022400010708060705060405030402030102240f0f09090a0a0b0b0c0c0d0d0e0e24080108070806080508040803080224010e07080609050a040b030c020d24060f0809080a070b070c070d060e240108070806080508040803080208240d0c09080a090b0a0c0b240e0909080a080b080c090d09240d0d09090a0a
-0b0b0c0c240d0509080a070b060c0624050e0809070a070b060c060d2404010807070607050604050305022402040708060705060406030524020a0708060905090409030a24050308070706060506042407082408030807080608050804240e0a09080a090b090c090d0a240a0e0809090a090b090c0a0d2407060807240403
-080707060605050424040807080608050824010407080607050704060305020524030a070806090509040924060a070924080a080924090f0809080a080b090c090d090e240d0609080a070b070c0724030b07080609050a040a2404050708060705062402000807070606050504050304020301240a09090824040e0809070a
+262c032600260226042d262c022601260426022d260f201912101a192811171a1a1d262c032601260226022d262c0126022d262c0626012d262c0326042d261f1a1d0e13262c0226002d262c0526002d260f1011281d141912262c0626012d261e1f0c1f2010262c0326042d26220c1f0e13101d262c0126022d2d2d262c1f1d
+243501000026180c23350126210c17352c220c1717262c0326012d2611171a1a1d262c0326002d26211a140f262c002602260726062d2d260d170f352c1f10181b171028220c1717262c012602260526062d262c002603260726032d261f10181b17102811171a1a1d262c022603260326022d262c022606260326012d262c03
+2601260126062d261f10181b1710280f1a1a1d262c0326022d262c032604260126022d2611171a1a1d281b100f101e1f0c17262c0126042d262c0526042d261f131d1a1910262c0326042d261e1f0c1f2010262c0126042d262c0526042d26220c1f0e13101d262c0326042d2d2d262c1f1d243502000026180c23350126210c
+17352c211a140f262c002602260526052d260e0c211028220c1717262c002601260526012d260e0c21102811171a1a1d262c002600260526012d2d260d170f352c0f201912101a1928220c1717262c002601260526062d260e0c211028220c1717262c002601260526032d260e0c21102811171a1a1d262c012603260326012d
+262c012601260126032d2611171a1a1d281b100f101e1f0c17262c0126012d262c0326012d260f1a1a1d262c022604260126022d260f201912101a192811171a1a1d262c012605260326012d261e1f0c1f2010262c0126012d262c0326012d261f1a180c130c2216262c0326052d26161a0d1a170f262c0126052d2d2d262c1f
+1d243502000026180c23350226210c17352c211a140f262c002602260526012d260e0c211028220c1717262c002601260526012d260e0c21102811171a1a1d262c002600260526012d2d260d170f352c0e0c211028220c1717262c002601260526022d2611171a1a1d281b100f101e1f0c17262c0126012d262c0326012d261e
+1f0c1f2010262c0126012d262c0326012d2d2d262c1f1d243501000026180c23350226210c17352c11171a1a1d262c002600260326032d2d260d170f352c1f10181b17102811171a1a1d262c002600260326032d2611171a1a1d281b100f101e1f0c17262c002601260326012d262c012600260126032d261e1f0c1f2010262c
+0126012d2d2d2c1e1710101b352c1e350011101717000c1e1710101b38261f3500141e00110c1e1f000c1e1710101b0b261119351e171b28111926103500221a161000201b0b2d260e1a1911201e100f352c1e3500171a1a161e0020191e1f100c0f240b1035001e0021141e141a19000e17100c1d1e2d261e1b100e1f1d0c17
+352c1e35000e0c1900220c1716001f131d1a20121300220c17171e0b261119351e1b100e28111926103500141e001e1a17140f000c120c14190b2d261b1a141e1a19352c1e3500171a1a161e001e140e160b261f3500141e0013201d1f000d24001b1a141e1a190b261119351b1e1928111926103500171a1a161e0013100c17
+1f1314101d0b2d26130c1e1f10352c1e35001e1b10100f1e00201b0b261035001e171a221e000f1a22190b2d260d1714190f352c1e3500141e000d1714190f38261035000e0c19001e1010000c120c14190b2d261019171412131f1019100f352c1e35000e0c19001e1010001021101d241f131419120b2d261f1a201213352c
+1e3500171a1a161e001f1a201213101d0b26103500171a1a161e0021201719101d0c0d17102d2d0509040924060a070924080a080924090f0809080a080b090c090d090e240d0609080a070b070c0724030b07080609050a040a2404050708060705062402000807070606050504050304020301240a09090824040e0809070a
 060b060c050d240e0409080a070b060c060d05240307070806080507040724070e0809080a080b070c070d24050b0709060a240a05080709060c150a1c1c170a160e341d12160e1b0c150a1c1c170a160e341a1e0e1e0e24150e17101d11340009240a0f0809080a090b090c090d0a0e240a0709082406050807070624070508
 070706240907240201080707060605050404030302240d0a09080a090b090c09240002070806070506040503050204010324050a07080609240b0509070a06240004070806070507040603060205010524010b070806090509040a030a020a240b0809080a0824020d07080609050a040b030c240a0809082408000807080608
 0508040803080208012405080708060824000307080607050604060305020501042402020707060605050404030324050c0809070a060b240304070806070506040524030e0809070a060b050c040d240e0c09080a090b0a0c0a0d0b24040907080608050924070c0809080a070b240700080708060805080407030702070124
 __sfx__
-010124010a1730a1730777306773057730a0732240321403204031f4031c2031e203202032320324203262032820328203222031320319403016030400303003020030b003084030900309403090030a4030a003
+010124010e1730a1730777306773057730a0732240321403204031f4031c2031e203202032320324203262032820328203222031320319403016030400303003020030b003084030900309403090030a4030a003
 010d240103410066200161001100011000710006100051001a10015100131020b100132002320024200262002820028200222001320019400016000400003000020020b000084000900009400090000a4000a000
 000208060c03002620026501b5500665006000155020c400090000a0000b4002440008400080000840008000080020c00008400090000a4000a0000b400240000640007002034000700006000054000440024400
 012000000f072070720f072110720e072060720f002050020e0020500210502050020c00207102010020100202002010020100201002010020150201502174021740215402134021240213402124021340209002
