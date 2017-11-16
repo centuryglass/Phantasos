@@ -145,14 +145,14 @@ level_structures=
 		"floor_pedestal,{0,1,3,1},{1,0,1,3},"..
 		"statue,{1,1}}}"
 
-status="{sleep={s= fell asleep!,t= is fast asleep.,fn=slp_fn,e= woke up.},"..
+status="sleep={s= fell asleep!,t= is fast asleep.,fn=slp_fn,e= woke up.},"..
 		"confused={s= looks unsteady.e='s vision clears},"..
 		"spectral={s= can walk through walls.,fn=spec_fn,e= is solid again.},"..
 		"poison={s= looks sick.,t= is hurt by poison.,fn=psn_fn,e= looks healthier.},"..
 		"haste={s= speeds up.,e= slows down.},"..
 		"blind={s= is blind!,e= can see again.},"..
 		"enlightened={s= can see everything.},"..
-		"tough={s= looks tougher.,e= looks vulnerable}}"
+		"tough={s= looks tougher.,e= looks vulnerable}"
 
 
 
@@ -289,7 +289,7 @@ end
 map characters to indices so
 strings can be loaded from memory.
 --]]
-allchars = "0123456789-.abcdefghijklmnopqrstuvwxyz,;_:(){}[]<>/?+=*|!#%&@$^"
+allchars = "0123456789-.abcdefghijklmnopqrstuvwxyz,;_:(){}[]<>/?+=*|!#%&@$^ "
 chartable={}
 for i=1,#allchars do
 	local c,n=sub(allchars,i,i),i-1
@@ -1850,7 +1850,9 @@ function _init()
 		log("testing "..test)
 		parse(test)
 	end)
-	log(to_string(vars.test_tbl))
+	str_to_mem(status,0x2000,"status effects")
+
+	log(mem_to_str(0x2000,#status))
 end
 
 function _update()
